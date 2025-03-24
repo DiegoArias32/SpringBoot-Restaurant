@@ -1,6 +1,6 @@
 package com.sena.crud_basic.service;
 
-import com.sena.crud_basic.model.PlatoDTO;
+import com.sena.crud_basic.model.DishDTO;
 import com.sena.crud_basic.repository.MenuRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,51 +14,51 @@ public class MenuService {
     @Autowired
     private MenuRepository menuRepository;
 
-    public String guardarPlato(PlatoDTO plato) {
+    public String saveDish(DishDTO dish) {
         try {
-            menuRepository.save(plato);
-            return "Plato guardado correctamente";
+            menuRepository.save(dish);
+            return "Dish saved successfully";
         } catch (Exception e) {
-            return "Error al guardar el plato: " + e.getMessage();
+            return "Error saving the dish: " + e.getMessage();
         }
     }
 
-    public List<PlatoDTO> obtenerTodosPlatos() {
+    public List<DishDTO> getAllDishes() {
         return menuRepository.findAll();
     }
 
-    public PlatoDTO obtenerPlatoPorId(int id) {
-        Optional<PlatoDTO> plato = menuRepository.findById(id);
-        return plato.orElse(null);
+    public DishDTO getDishById(int id) {
+        Optional<DishDTO> dish = menuRepository.findById(id);
+        return dish.orElse(null);
     }
 
-    public String actualizarPlato(PlatoDTO plato) {
-        if (menuRepository.existsById(plato.getIdPlato())) {
+    public String updateDish(DishDTO dish) {
+        if (menuRepository.existsById(dish.getIdDish())) {
             try {
-                menuRepository.save(plato);
-                return "Plato actualizado correctamente";
+                menuRepository.save(dish);
+                return "Dish updated successfully";
             } catch (Exception e) {
-                return "Error al actualizar el plato: " + e.getMessage();
+                return "Error updating the dish: " + e.getMessage();
             }
         } else {
-            return "No se encontró el plato con ID: " + plato.getIdPlato();
+            return "Dish not found with ID: " + dish.getIdDish();
         }
     }
 
-    public String eliminarPlato(int id) {
+    public String deleteDish(int id) {
         if (menuRepository.existsById(id)) {
             try {
                 menuRepository.deleteById(id);
-                return "Plato eliminado correctamente";
+                return "Dish deleted successfully";
             } catch (Exception e) {
-                return "Error al eliminar el plato: " + e.getMessage();
+                return "Error deleting the dish: " + e.getMessage();
             }
         } else {
-            return "No se encontró el plato con ID: " + id;
+            return "Dish not found with ID: " + id;
         }
     }
 
-    public List<PlatoDTO> buscarPlatos(String termino) {
-        return menuRepository.findByNombreContainingOrDescripcionContaining(termino, termino);
+    public List<DishDTO> searchDishes(String term) {
+        return menuRepository.findByNameContainingOrDescriptionContaining(term, term);
     }
 }
