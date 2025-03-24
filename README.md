@@ -31,7 +31,7 @@ El **Backend** está desarrollado usando **Spring Boot** y se encarga de gestion
 
 ### Instrucciones para configurar el backend
 
-1. **Clona el repositorio**: Clona el repositorio: En primer lugar, clona el repositorio del proyecto usando el siguiente comando:
+1. **Clona el repositorio**: En primer lugar, clona el repositorio del proyecto usando el siguiente comando:
 
    ```bash
    git clone https://github.com/DiegoArias32/SpringBoot-Restaurant.git
