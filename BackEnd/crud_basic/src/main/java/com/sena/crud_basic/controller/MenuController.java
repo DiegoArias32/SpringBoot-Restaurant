@@ -1,6 +1,6 @@
 package com.sena.crud_basic.controller;
 
-import com.sena.crud_basic.model.PlatoDTO;
+import com.sena.crud_basic.model.DishDTO;
 import com.sena.crud_basic.service.MenuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -10,48 +10,48 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/menu")
-@CrossOrigin(origins = "*") // Permitir solicitudes desde cualquier origen
+@CrossOrigin(origins = "*") // Allow requests from any origin
 public class MenuController {
 
     @Autowired
     private MenuService menuService;
 
     @PostMapping
-    public ResponseEntity<String> crearPlato(@RequestBody PlatoDTO plato) {
-        String resultado = menuService.guardarPlato(plato);
-        return ResponseEntity.ok(resultado);
+    public ResponseEntity<String> createDish(@RequestBody DishDTO dish) {
+        String result = menuService.saveDish(dish);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping
-    public ResponseEntity<List<PlatoDTO>> obtenerTodosPlatos() {
-        return ResponseEntity.ok(menuService.obtenerTodosPlatos());
+    public ResponseEntity<List<DishDTO>> getAllDishes() {
+        return ResponseEntity.ok(menuService.getAllDishes());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PlatoDTO> obtenerPlatoPorId(@PathVariable int id) {
-        PlatoDTO plato = menuService.obtenerPlatoPorId(id);
-        if (plato != null) {
-            return ResponseEntity.ok(plato);
+    public ResponseEntity<DishDTO> getDishById(@PathVariable int id) {
+        DishDTO dish = menuService.getDishById(id);
+        if (dish != null) {
+            return ResponseEntity.ok(dish);
         } else {
             return ResponseEntity.notFound().build();
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> actualizarPlato(@PathVariable int id, @RequestBody PlatoDTO plato) {
-        plato.setIdPlato(id);
-        String resultado = menuService.actualizarPlato(plato);
-        return ResponseEntity.ok(resultado);
+    public ResponseEntity<String> updateDish(@PathVariable int id, @RequestBody DishDTO dish) {
+        dish.setIdDish(id);
+        String result = menuService.updateDish(dish);
+        return ResponseEntity.ok(result);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> eliminarPlato(@PathVariable int id) {
-        String resultado = menuService.eliminarPlato(id);
-        return ResponseEntity.ok(resultado);
+    public ResponseEntity<String> deleteDish(@PathVariable int id) {
+        String result = menuService.deleteDish(id);
+        return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/buscar")
-    public ResponseEntity<List<PlatoDTO>> buscarPlatos(@RequestParam String termino) {
-        return ResponseEntity.ok(menuService.buscarPlatos(termino));
+    @GetMapping("/search")
+    public ResponseEntity<List<DishDTO>> searchDishes(@RequestParam String term) {
+        return ResponseEntity.ok(menuService.searchDishes(term));
     }
 }
