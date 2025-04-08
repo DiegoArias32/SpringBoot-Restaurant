@@ -5,7 +5,7 @@
 Este es un proyecto full-stack para la gestión de **clientes**, **pedidos** y **menú de platos**. Permite a los usuarios administrar clientes, realizar pedidos, y gestionar el menú de un restaurante. Está dividido en dos partes principales:
 
 - **Backend**: Hecho con **Spring Boot** en Java, se encarga de gestionar las operaciones de la base de datos y servir los endpoints de la API.
-- **Frontend**: Hecho con **Htmls, css y js** (o el framework de tu elección), proporciona una interfaz de usuario interactiva para interactuar con el backend.
+- **Frontend**: Hecho con **Htmls, css y js**, proporciona una interfaz de usuario interactiva para interactuar con el backend.
 
 El proyecto incluye funcionalidades como:
 - CRUD de clientes, pedidos y platos.
