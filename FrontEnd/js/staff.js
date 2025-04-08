@@ -82,8 +82,8 @@ mobileAddClientBtn.addEventListener('click', () => {
 async function fetchClients(searchTerm = '') {
     try {
         const url = searchTerm 
-            ? `${API_BASE_URL}/clientes/buscar?termino=${encodeURIComponent(searchTerm)}`
-            : `${API_BASE_URL}/clientes`;
+            ? `${API_BASE_URL}/clients/search?term=${encodeURIComponent(searchTerm)}`
+            : `${API_BASE_URL}/clients`;
 
         const response = await axios.get(url);
         const clients = response.data;
@@ -91,7 +91,7 @@ async function fetchClients(searchTerm = '') {
         if (clients.length === 0) {
             clientsListModal.innerHTML = `
                 <div class="text-center text-gray-500 p-4 animate-fade-in">
-                    No se encontraron clientes${searchTerm ? ` para "${searchTerm}"` : ''}.
+                    No clients found${searchTerm ? ` for "${searchTerm}"` : ''}.
                 </div>
             `;
             return clients;
@@ -106,18 +106,18 @@ async function fetchClients(searchTerm = '') {
 
             return `
                 <div class="client-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all animate-fade-in cursor-pointer" 
-                    data-client-id="${client.id}" onclick="viewClientDetails('${client.id}')">
+                    data-client-id="${client.idClient}" onclick="viewClientDetails('${client.idClient}')">
                     <div class="flex justify-between items-center">
                         <div>
                             <p class="font-bold text-lg">
-                                ${highlightTerm(client.nombre || '')} ${highlightTerm(client.apellido || '')}
+                                ${highlightTerm(client.firstName || '')} ${highlightTerm(client.lastName || '')}
                             </p>
                             <p class="text-sm text-gray-600 mt-1">
                                 <i class="fas fa-envelope mr-2 text-green-600"></i>${highlightTerm(client.email || '')}
                             </p>
                         </div>
                         <span class="text-green-700 flex items-center">
-                            <i class="fas fa-phone mr-2"></i>${client.telefono || 'N/A'}
+                            <i class="fas fa-phone mr-2"></i>${client.phone || 'N/A'}
                         </span>
                     </div>
                 </div>
@@ -129,7 +129,7 @@ async function fetchClients(searchTerm = '') {
         console.error('Error fetching clients:', error);
         clientsListModal.innerHTML = `
             <div class="text-center text-red-500 animate-fade-in">
-                Error al cargar clientes. 
+                Error loading clients. 
                 ${error.response ? error.response.data : error.message}
             </div>
         `;
@@ -140,7 +140,7 @@ async function fetchClients(searchTerm = '') {
 // Fetch client by ID
 async function fetchClientById(id) {
     try {
-        const response = await axios.get(`${API_BASE_URL}/clientes/${id}`);
+        const response = await axios.get(`${API_BASE_URL}/clients/${id}`);
         return response.data;
     } catch (error) {
         console.error(`Error fetching client with ID ${id}:`, error);
@@ -158,7 +158,7 @@ async function fetchRecentClients() {
         if (recentClients.length === 0) {
             recentClientsList.innerHTML = `
                 <div class="text-center text-gray-500 p-4">
-                    No hay clientes registrados.
+                    No registered clients.
                 </div>
             `;
             return;
@@ -166,16 +166,16 @@ async function fetchRecentClients() {
         
         recentClientsList.innerHTML = recentClients.map(client => `
             <div class="client-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                data-client-id="${client.id}" onclick="viewClientDetails('${client.id}')">
+                data-client-id="${client.idClient}" onclick="viewClientDetails('${client.idClient}')">
                 <div class="flex justify-between items-center">
                     <div>
-                        <p class="font-bold text-lg">${client.nombre || ''} ${client.apellido || ''}</p>
+                        <p class="font-bold text-lg">${client.firstName || ''} ${client.lastName || ''}</p>
                         <p class="text-sm text-gray-600 mt-1">
                             <i class="fas fa-envelope mr-2 text-green-600"></i>${client.email || ''}
                         </p>
                     </div>
                     <span class="text-green-700 flex items-center">
-                        <i class="fas fa-phone mr-2"></i>${client.telefono || 'N/A'}
+                        <i class="fas fa-phone mr-2"></i>${client.phone || 'N/A'}
                     </span>
                 </div>
             </div>
@@ -184,7 +184,7 @@ async function fetchRecentClients() {
         console.error('Error fetching recent clients:', error);
         recentClientsList.innerHTML = `
             <div class="text-center text-red-500 p-4">
-                Error al cargar clientes recientes.
+                Error loading recent clients.
             </div>
         `;
     }
@@ -193,14 +193,14 @@ async function fetchRecentClients() {
 // Filter clients
 async function filterClients() {
     const filters = {
-        nombre: filterInputs.name.value.trim(),
-        telefono: filterInputs.phone.value.trim(),
+        firstName: filterInputs.name.value.trim(),
+        phone: filterInputs.phone.value.trim(),
         email: filterInputs.email.value.trim()
     };
     
     try {
         // We could adjust this to use a specific filter endpoint if available
-        const url = new URL(`${API_BASE_URL}/clientes/filtrar`);
+        const url = new URL(`${API_BASE_URL}/clients/filter`);
         
         // Add filter parameters
         for (const [key, value] of Object.entries(filters)) {
@@ -216,7 +216,7 @@ async function filterClients() {
         if (clients.length === 0) {
             recentClientsList.innerHTML = `
                 <div class="text-center text-gray-500 p-4 animate-fade-in">
-                    No se encontraron clientes con los filtros aplicados.
+                    No clients found with the applied filters.
                 </div>
             `;
             return;
@@ -224,16 +224,16 @@ async function filterClients() {
         
         recentClientsList.innerHTML = clients.map(client => `
             <div class="client-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                data-client-id="${client.id}" onclick="viewClientDetails('${client.id}')">
+                data-client-id="${client.idClient}" onclick="viewClientDetails('${client.idClient}')">
                 <div class="flex justify-between items-center">
                     <div>
-<p class="font-bold text-lg">${client.nombre || ''} ${client.apellido || ''}</p>
+                        <p class="font-bold text-lg">${client.firstName || ''} ${client.lastName || ''}</p>
                         <p class="text-sm text-gray-600 mt-1">
                             <i class="fas fa-envelope mr-2 text-green-600"></i>${client.email || ''}
                         </p>
                     </div>
                     <span class="text-green-700 flex items-center">
-                        <i class="fas fa-phone mr-2"></i>${client.telefono || 'N/A'}
+                        <i class="fas fa-phone mr-2"></i>${client.phone || 'N/A'}
                     </span>
                 </div>
             </div>
@@ -243,7 +243,7 @@ async function filterClients() {
         console.error('Error applying filters:', error);
         recentClientsList.innerHTML = `
             <div class="text-center text-red-500 p-4">
-                Error al filtrar clientes: ${error.response ? error.response.data : error.message}
+                Error filtering clients: ${error.response ? error.response.data : error.message}
             </div>
         `;
     }
@@ -252,7 +252,7 @@ async function filterClients() {
 // Create client
 async function createClient(clientData) {
     try {
-        const response = await axios.post(`${API_BASE_URL}/clientes`, clientData);
+        const response = await axios.post(`${API_BASE_URL}/clients`, clientData);
         return response.data;
     } catch (error) {
         console.error('Error creating client:', error);
@@ -263,7 +263,7 @@ async function createClient(clientData) {
 // Update client
 async function updateClient(id, clientData) {
     try {
-        const response = await axios.put(`${API_BASE_URL}/clientes/${id}`, clientData);
+        const response = await axios.put(`${API_BASE_URL}/clients/${id}`, clientData);
         return response.data;
     } catch (error) {
         console.error(`Error updating client with ID ${id}:`, error);
@@ -274,7 +274,7 @@ async function updateClient(id, clientData) {
 // Delete client
 async function deleteClient(id) {
     try {
-        await axios.delete(`${API_BASE_URL}/clientes/${id}`);
+        await axios.delete(`${API_BASE_URL}/clients/${id}`);
         return true;
     } catch (error) {
         console.error(`Error deleting client with ID ${id}:`, error);
@@ -291,20 +291,20 @@ function openClientModal(client = null) {
     
     if (client) {
         // Edit mode
-        clientModalTitle.textContent = 'Editar Cliente';
-        document.getElementById('client-id').value = client.id;
-        document.getElementById('client-name').value = client.nombre || '';
-        document.getElementById('client-lastname').value = client.apellido || '';
+        clientModalTitle.textContent = 'Edit Client';
+        document.getElementById('client-id').value = client.idClient;
+        document.getElementById('client-name').value = client.firstName || '';
+        document.getElementById('client-lastname').value = client.lastName || '';
         document.getElementById('client-email').value = client.email || '';
-        document.getElementById('client-phone').value = client.telefono || '';
-        document.getElementById('client-address').value = client.direccion || '';
-        submitClientBtn.textContent = 'Actualizar';
-        currentClientId = client.id;
+        document.getElementById('client-phone').value = client.phone || '';
+        document.getElementById('client-address').value = client.address || '';
+        submitClientBtn.textContent = 'Update';
+        currentClientId = client.idClient;
     } else {
         // Create mode
-        clientModalTitle.textContent = 'Registrar Nuevo Cliente';
+        clientModalTitle.textContent = 'Register New Client';
         document.getElementById('client-id').value = '';
-        submitClientBtn.textContent = 'Registrar';
+        submitClientBtn.textContent = 'Register';
         currentClientId = null;
     }
     
@@ -324,7 +324,7 @@ async function viewClientDetails(id) {
                     <div class="bg-green-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
                         <i class="fas fa-user text-xl"></i>
                     </div>
-                    <h4 class="text-xl font-bold ml-3">${client.nombre || ''} ${client.apellido || ''}</h4>
+                    <h4 class="text-xl font-bold ml-3">${client.firstName || ''} ${client.lastName || ''}</h4>
                 </div>
                 
                 <div class="space-y-3">
@@ -334,15 +334,15 @@ async function viewClientDetails(id) {
                     </div>
                     <div class="flex items-start">
                         <div class="w-8 text-green-600"><i class="fas fa-phone"></i></div>
-                        <div>${client.telefono || 'N/A'}</div>
+                        <div>${client.phone || 'N/A'}</div>
                     </div>
                     <div class="flex items-start">
                         <div class="w-8 text-green-600"><i class="fas fa-map-marker-alt"></i></div>
-                        <div>${client.direccion || 'N/A'}</div>
+                        <div>${client.address || 'N/A'}</div>
                     </div>
                     <div class="flex items-start">
                         <div class="w-8 text-green-600"><i class="fas fa-calendar-alt"></i></div>
-                        <div>Cliente desde: ${new Date(client.fechaRegistro || Date.now()).toLocaleDateString('es-ES')}</div>
+                        <div>Client since: ${new Date(client.registrationDate || Date.now()).toLocaleDateString('en-US')}</div>
                     </div>
                 </div>
             </div>
@@ -356,7 +356,7 @@ async function viewClientDetails(id) {
         clientsModal.classList.add('hidden');
         clientsModal.classList.remove('flex');
     } catch (error) {
-        alert(`Error al cargar los detalles del cliente: ${error.message}`);
+        alert(`Error loading client details: ${error.message}`);
     }
 }
 
@@ -431,22 +431,22 @@ clientForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     
     const clientData = {
-        nombre: document.getElementById('client-name').value,
-        apellido: document.getElementById('client-lastname').value,
+        firstName: document.getElementById('client-name').value,
+        lastName: document.getElementById('client-lastname').value,
         email: document.getElementById('client-email').value,
-        telefono: document.getElementById('client-phone').value,
-        direccion: document.getElementById('client-address').value
+        phone: document.getElementById('client-phone').value,
+        address: document.getElementById('client-address').value
     };
     
     try {
         if (currentClientId) {
             // Update existing client
             await updateClient(currentClientId, clientData);
-            alert('Cliente actualizado exitosamente');
+            alert('Client updated successfully');
         } else {
             // Create new client
             await createClient(clientData);
-            alert('Cliente registrado exitosamente');
+            alert('Client registered successfully');
         }
         
         clientModal.classList.add('hidden');
@@ -478,7 +478,7 @@ editClientBtn.addEventListener('click', async () => {
         clientDetailsModal.classList.remove('flex');
         openClientModal(client);
     } catch (error) {
-        alert(`Error al obtener información del cliente: ${error.message}`);
+        alert(`Error getting client information: ${error.message}`);
     }
 });
 
@@ -508,9 +508,9 @@ confirmDeleteBtn.addEventListener('click', async () => {
             fetchClients(searchClientsInput.value.trim());
         }
         
-        alert('Cliente eliminado exitosamente');
+        alert('Client deleted successfully');
     } catch (error) {
-        alert(`Error al eliminar cliente: ${error.message}`);
+        alert(`Error deleting client: ${error.message}`);
         deleteConfirmModal.classList.add('hidden');
         deleteConfirmModal.classList.remove('flex');
     }
@@ -539,8 +539,8 @@ const deleteEmpConfirmModal = document.getElementById('delete-emp-confirm-modal'
 const cancelEmpDeleteBtn = document.getElementById('cancel-emp-delete');
 const confirmEmpDeleteBtn = document.getElementById('confirm-emp-delete');
 const employeeFilterInputs = {
-name: document.getElementById('filter-emp-name'),
-position: document.getElementById('filter-emp-position')
+    name: document.getElementById('filter-emp-name'),
+    position: document.getElementById('filter-emp-position')
 };
 
 let currentEmployeeId = null;
@@ -549,319 +549,319 @@ let currentEmployeeId = null;
 
 // Fetch all employees
 async function fetchEmployees(searchTerm = '') {
-try {
-const url = searchTerm 
-    ? `${API_BASE_URL}/empleados/buscar?termino=${encodeURIComponent(searchTerm)}`
-    : `${API_BASE_URL}/empleados`;
+    try {
+        const url = searchTerm 
+            ? `${API_BASE_URL}/employees/search?term=${encodeURIComponent(searchTerm)}`
+            : `${API_BASE_URL}/employees`;
 
-const response = await axios.get(url);
-const employees = response.data;
+        const response = await axios.get(url);
+        const employees = response.data;
 
-if (employees.length === 0) {
-    employeesListModal.innerHTML = `
-        <div class="text-center text-gray-500 p-4 animate-fade-in">
-            No se encontraron empleados${searchTerm ? ` para "${searchTerm}"` : ''}.
-        </div>
-    `;
-    return employees;
-}
-
-employeesListModal.innerHTML = employees.map(employee => {
-    const highlightTerm = (text) => {
-        if (!searchTerm) return text;
-        const regex = new RegExp(`(${searchTerm})`, 'gi');
-        return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-    };
-
-    return `
-        <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all animate-fade-in cursor-pointer" 
-            data-employee-id="${employee.id_empleado}" onclick="viewEmployeeDetails(${employee.id_empleado})">
-            <div class="flex justify-between items-center">
-                <div>
-                    <p class="font-bold text-lg">
-                        ${highlightTerm(employee.nombre || '')} ${highlightTerm(employee.apellido || '')}
-                    </p>
+        if (employees.length === 0) {
+            employeesListModal.innerHTML = `
+                <div class="text-center text-gray-500 p-4 animate-fade-in">
+                    No employees found${searchTerm ? ` for "${searchTerm}"` : ''}.
                 </div>
-                <div class="text-blue-700">
-                    <div class="flex items-center mb-1">
-                        <i class="fas fa-id-badge mr-2"></i>${highlightTerm(employee.puesto || 'N/A')}
-                    </div>
-                    <div class="flex items-center text-sm">
-                        <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salario || 'N/A'}
+            `;
+            return employees;
+        }
+
+        employeesListModal.innerHTML = employees.map(employee => {
+            const highlightTerm = (text) => {
+                if (!searchTerm) return text;
+                const regex = new RegExp(`(${searchTerm})`, 'gi');
+                return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
+            };
+
+            return `
+                <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all animate-fade-in cursor-pointer" 
+                    data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-lg">
+                                ${highlightTerm(employee.firstName || '')} ${highlightTerm(employee.lastName || '')}
+                            </p>
+                        </div>
+                        <div class="text-blue-700">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-id-badge mr-2"></i>${highlightTerm(employee.position || 'N/A')}
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
+                            </div>
+                        </div>
                     </div>
                 </div>
+            `;
+        }).join('');
+
+        return employees;
+    } catch (error) {
+        console.error('Error fetching employees:', error);
+        employeesListModal.innerHTML = `
+            <div class="text-center text-red-500 animate-fade-in">
+                Error loading employees. 
+                ${error.response ? error.response.data : error.message}
             </div>
-        </div>
-    `;
-}).join('');
-
-return employees;
-} catch (error) {
-console.error('Error fetching employees:', error);
-employeesListModal.innerHTML = `
-    <div class="text-center text-red-500 animate-fade-in">
-        Error al cargar empleados. 
-        ${error.response ? error.response.data : error.message}
-    </div>
-`;
-return [];
-}
+        `;
+        return [];
+    }
 }
 
 // Fetch employee by ID
 async function fetchEmployeeById(id) {
-try {
-const response = await axios.get(`${API_BASE_URL}/empleados/${id}`);
-return response.data;
-} catch (error) {
-console.error(`Error fetching employee with ID ${id}:`, error);
-throw error;
-}
+    try {
+        const response = await axios.get(`${API_BASE_URL}/employees/${id}`);
+        return response.data;
+    } catch (error) {
+        console.error(`Error fetching employee with ID ${id}:`, error);
+        throw error;
+    }
 }
 
 // Fetch Recent Employees for Dashboard
 async function fetchRecentEmployees() {
-try {
-const response = await axios.get(`${API_BASE_URL}/empleados/recientes`);
-const recentEmployees = response.data;
+    try {
+        const response = await axios.get(`${API_BASE_URL}/employees/recent`);
+        const recentEmployees = response.data;
 
-if (recentEmployees.length === 0) {
-    recentEmployeesList.innerHTML = `
-        <div class="text-center text-gray-500 p-4">
-            No hay empleados registrados.
-        </div>
-    `;
-    return;
-}
+        if (recentEmployees.length === 0) {
+            recentEmployeesList.innerHTML = `
+                <div class="text-center text-gray-500 p-4">
+                    No employees registered.
+                </div>
+            `;
+            return;
+        }
 
-recentEmployeesList.innerHTML = recentEmployees.map(employee => `
-    <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-        data-employee-id="${employee.id_empleado}" onclick="viewEmployeeDetails(${employee.id_empleado})">
-        <div class="flex justify-between items-center">
-            <div>
-                <p class="font-bold text-lg">${employee.nombre || ''} ${employee.apellido || ''}</p>
-            </div>
-            <div class="text-blue-700">
-                <div class="flex items-center mb-1">
-                    <i class="fas fa-id-badge mr-2"></i>${employee.puesto || 'N/A'}
+        recentEmployeesList.innerHTML = recentEmployees.map(employee => `
+            <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-lg">${employee.firstName || ''} ${employee.lastName || ''}</p>
+                    </div>
+                    <div class="text-blue-700">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-id-badge mr-2"></i>${employee.position || 'N/A'}
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
+                        </div>
+                    </div>
                 </div>
-                <div class="flex items-center text-sm">
-                    <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salario || 'N/A'}
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error fetching recent employees:', error);
+        // If specific route fails, try with all employees
+        try {
+            const allEmployees = await fetchEmployees();
+            const recentEmployees = allEmployees.slice(0, 5);
+            
+            if (recentEmployees.length === 0) {
+                recentEmployeesList.innerHTML = `
+                    <div class="text-center text-gray-500 p-4">
+                        No employees registered.
+                    </div>
+                `;
+                return;
+            }
+            
+            recentEmployeesList.innerHTML = recentEmployees.map(employee => `
+                <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                    data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-lg">${employee.firstName || ''} ${employee.lastName || ''}</p>
+                        </div>
+                        <div class="text-blue-700">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-id-badge mr-2"></i>${employee.position || 'N/A'}
+                            </div>
+                            <div class="flex items-center text-sm">
+                                <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-`).join('');
-} catch (error) {
-console.error('Error fetching recent employees:', error);
-// Si falla la ruta específica, intentamos con todos los empleados
-try {
-    const allEmployees = await fetchEmployees();
-    const recentEmployees = allEmployees.slice(0, 5);
-    
-    if (recentEmployees.length === 0) {
-        recentEmployeesList.innerHTML = `
-            <div class="text-center text-gray-500 p-4">
-                No hay empleados registrados.
-            </div>
-        `;
-        return;
+            `).join('');
+        } catch (innerError) {
+            recentEmployeesList.innerHTML = `
+                <div class="text-center text-red-500 p-4">
+                    Error loading recent employees.
+                </div>
+            `;
+        }
     }
-    
-    recentEmployeesList.innerHTML = recentEmployees.map(employee => `
-        <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-            data-employee-id="${employee.id_empleado}" onclick="viewEmployeeDetails(${employee.id_empleado})">
-            <div class="flex justify-between items-center">
-                <div>
-                    <p class="font-bold text-lg">${employee.nombre || ''} ${employee.apellido || ''}</p>
-                </div>
-                <div class="text-blue-700">
-                    <div class="flex items-center mb-1">
-                        <i class="fas fa-id-badge mr-2"></i>${employee.puesto || 'N/A'}
-                    </div>
-                    <div class="flex items-center text-sm">
-                        <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salario || 'N/A'}
-                    </div>
-                </div>
-            </div>
-        </div>
-    `).join('');
-} catch (innerError) {
-    recentEmployeesList.innerHTML = `
-        <div class="text-center text-red-500 p-4">
-            Error al cargar empleados recientes.
-        </div>
-    `;
-}
-}
 }
 
 // Filter employees
 async function filterEmployees() {
-const filters = {
-nombre: employeeFilterInputs.name.value.trim(),
-puesto: employeeFilterInputs.position.value.trim()
-};
+    const filters = {
+        firstName: employeeFilterInputs.name.value.trim(),
+        position: employeeFilterInputs.position.value.trim()
+    };
 
-try {
-const url = new URL(`${API_BASE_URL}/empleados/filtrar`);
+    try {
+        const url = new URL(`${API_BASE_URL}/employees/filter`);
 
-// Add filter parameters
-for (const [key, value] of Object.entries(filters)) {
-    if (value) {
-        url.searchParams.append(key, value);
+        // Add filter parameters
+        for (const [key, value] of Object.entries(filters)) {
+            if (value) {
+                url.searchParams.append(key, value);
+            }
+        }
+
+        const response = await axios.get(url.toString());
+        const employees = response.data;
+
+        if (employees.length === 0) {
+            recentEmployeesList.innerHTML = `
+                <div class="text-center text-gray-500 p-4 animate-fade-in">
+                    No employees found with the applied filters.
+                </div>
+            `;
+            return;
+        }
+
+        recentEmployeesList.innerHTML = employees.map(employee => `
+            <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
+                data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-bold text-lg">${employee.firstName || ''} ${employee.lastName || ''}</p>
+                    </div>
+                    <div class="text-blue-700">
+                        <div class="flex items-center mb-1">
+                            <i class="fas fa-id-badge mr-2"></i>${employee.position || 'N/A'}
+                        </div>
+                        <div class="flex items-center text-sm">
+                            <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error applying filters:', error);
+        recentEmployeesList.innerHTML = `
+            <div class="text-center text-red-500 p-4">
+                Error filtering employees: ${error.response ? error.response.data : error.message}
+            </div>
+        `;
     }
-}
-
-const response = await axios.get(url.toString());
-const employees = response.data;
-
-if (employees.length === 0) {
-    recentEmployeesList.innerHTML = `
-        <div class="text-center text-gray-500 p-4 animate-fade-in">
-            No se encontraron empleados con los filtros aplicados.
-        </div>
-    `;
-    return;
-}
-
-recentEmployeesList.innerHTML = employees.map(employee => `
-    <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-        data-employee-id="${employee.id_empleado}" onclick="viewEmployeeDetails(${employee.id_empleado})">
-        <div class="flex justify-between items-center">
-            <div>
-                <p class="font-bold text-lg">${employee.nombre || ''} ${employee.apellido || ''}</p>
-            </div>
-            <div class="text-blue-700">
-                <div class="flex items-center mb-1">
-                    <i class="fas fa-id-badge mr-2"></i>${employee.puesto || 'N/A'}
-                </div>
-                <div class="flex items-center text-sm">
-                    <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salario || 'N/A'}
-                </div>
-            </div>
-        </div>
-    </div>
-`).join('');
-
-} catch (error) {
-console.error('Error applying filters:', error);
-recentEmployeesList.innerHTML = `
-    <div class="text-center text-red-500 p-4">
-        Error al filtrar empleados: ${error.response ? error.response.data : error.message}
-    </div>
-`;
-}
 }
 
 // Create employee
 async function createEmployee(employeeData) {
-try {
-const response = await axios.post(`${API_BASE_URL}/empleados`, employeeData);
-return response.data;
-} catch (error) {
-console.error('Error creating employee:', error);
-throw error;
-}
+    try {
+        const response = await axios.post(`${API_BASE_URL}/employees`, employeeData);
+        return response.data;
+    } catch (error) {
+        console.error('Error creating employee:', error);
+        throw error;
+    }
 }
 
 // Update employee
 async function updateEmployee(id, employeeData) {
-try {
-const response = await axios.put(`${API_BASE_URL}/empleados/${id}`, employeeData);
-return response.data;
-} catch (error) {
-console.error(`Error updating employee with ID ${id}:`, error);
-throw error;
-}
+    try {
+        const response = await axios.put(`${API_BASE_URL}/employees/${id}`, employeeData);
+        return response.data;
+    } catch (error) {
+        console.error(`Error updating employee with ID ${id}:`, error);
+        throw error;
+    }
 }
 
 // Delete employee
 async function deleteEmployee(id) {
-try {
-await axios.delete(`${API_BASE_URL}/empleados/${id}`);
-return true;
-} catch (error) {
-console.error(`Error deleting employee with ID ${id}:`, error);
-throw error;
-}
+    try {
+        await axios.delete(`${API_BASE_URL}/employees/${id}`);
+        return true;
+    } catch (error) {
+        console.error(`Error deleting employee with ID ${id}:`, error);
+        throw error;
+    }
 }
 
 // UI Interactions for Employees
 
 // Open employee modal (for create or edit)
 function openEmployeeModal(employee = null) {
-// Reset form and set mode (create or edit)
-employeeForm.reset();
+    // Reset form and set mode (create or edit)
+    employeeForm.reset();
 
-if (employee) {
-// Edit mode
-employeeModalTitle.textContent = 'Editar Empleado';
-document.getElementById('employee-id').value = employee.id_empleado;
-document.getElementById('employee-name').value = employee.nombre || '';
-document.getElementById('employee-lastname').value = employee.apellido || '';
-document.getElementById('employee-position').value = employee.puesto || '';
-document.getElementById('employee-salary').value = employee.salario || '';
-submitEmployeeBtn.textContent = 'Actualizar';
-currentEmployeeId = employee.id_empleado;
-} else {
-// Create mode
-employeeModalTitle.textContent = 'Registrar Nuevo Empleado';
-document.getElementById('employee-id').value = '';
-submitEmployeeBtn.textContent = 'Registrar';
-currentEmployeeId = null;
-}
+    if (employee) {
+        // Edit mode
+        employeeModalTitle.textContent = 'Edit Employee';
+        document.getElementById('employee-id').value = employee.idEmployee;
+        document.getElementById('employee-name').value = employee.firstName || '';
+        document.getElementById('employee-lastname').value = employee.lastName || '';
+        document.getElementById('employee-position').value = employee.position || '';
+        document.getElementById('employee-salary').value = employee.salary || '';
+        submitEmployeeBtn.textContent = 'Update';
+        currentEmployeeId = employee.idEmployee;
+    } else {
+        // Create mode
+        employeeModalTitle.textContent = 'Register New Employee';
+        document.getElementById('employee-id').value = '';
+        submitEmployeeBtn.textContent = 'Register';
+        currentEmployeeId = null;
+    }
 
-employeeModal.classList.remove('hidden');
-employeeModal.classList.add('flex');
+    employeeModal.classList.remove('hidden');
+    employeeModal.classList.add('flex');
 }
 
 // View employee details
 async function viewEmployeeDetails(id) {
-try {
-const employee = await fetchEmployeeById(id);
-currentEmployeeId = id;
+    try {
+        const employee = await fetchEmployeeById(id);
+        currentEmployeeId = id;
 
-employeeDetailsContent.innerHTML = `
-    <div class="bg-blue-50 p-4 rounded-lg">
-        <div class="flex items-center mb-4">
-            <div class="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
-                <i class="fas fa-user-tie text-xl"></i>
+        employeeDetailsContent.innerHTML = `
+            <div class="bg-blue-50 p-4 rounded-lg">
+                <div class="flex items-center mb-4">
+                    <div class="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
+                        <i class="fas fa-user-tie text-xl"></i>
+                    </div>
+                    <h4 class="text-xl font-bold ml-3">${employee.firstName || ''} ${employee.lastName || ''}</h4>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="flex items-start">
+                        <div class="w-8 text-blue-600"><i class="fas fa-id-badge"></i></div>
+                        <div>${employee.position || 'N/A'}</div>
+                    </div>
+                    <div class="flex items-start">
+                        <div class="w-8 text-blue-600"><i class="fas fa-money-bill-wave"></i></div>
+                        <div>$${employee.salary || 'N/A'}</div>
+                    </div>
+                </div>
             </div>
-            <h4 class="text-xl font-bold ml-3">${employee.nombre || ''} ${employee.apellido || ''}</h4>
-        </div>
-        
-        <div class="space-y-3">
-            <div class="flex items-start">
-                <div class="w-8 text-blue-600"><i class="fas fa-id-badge"></i></div>
-                <div>${employee.puesto || 'N/A'}</div>
-            </div>
-            <div class="flex items-start">
-                <div class="w-8 text-blue-600"><i class="fas fa-money-bill-wave"></i></div>
-                <div>$${employee.salario || 'N/A'}</div>
-            </div>
-        </div>
-    </div>
-`;
+        `;
 
-// Show employee details modal
-employeeDetailsModal.classList.remove('hidden');
-employeeDetailsModal.classList.add('flex');
+        // Show employee details modal
+        employeeDetailsModal.classList.remove('hidden');
+        employeeDetailsModal.classList.add('flex');
 
-// If the employees modal is open, close it
-employeesModal.classList.add('hidden');
-employeesModal.classList.remove('flex');
-} catch (error) {
-alert(`Error al cargar los detalles del empleado: ${error.message}`);
-}
+        // If the employees modal is open, close it
+        employeesModal.classList.add('hidden');
+        employeesModal.classList.remove('flex');
+    } catch (error) {
+        alert(`Error loading employee details: ${error.message}`);
+    }
 }
 
 // Show delete confirmation for employee
 function showEmployeeDeleteConfirmation() {
-deleteEmpConfirmModal.classList.remove('hidden');
-deleteEmpConfirmModal.classList.add('flex');
-employeeDetailsModal.classList.add('hidden');
-employeeDetailsModal.classList.remove('flex');
+    deleteEmpConfirmModal.classList.remove('hidden');
+    deleteEmpConfirmModal.classList.add('flex');
+    employeeDetailsModal.classList.add('hidden');
+    employeeDetailsModal.classList.remove('flex');
 }
 
 // Event Listeners for Employee Management
@@ -871,130 +871,130 @@ window.viewEmployeeDetails = viewEmployeeDetails;
 
 // Load recent employees on page load
 document.addEventListener('DOMContentLoaded', () => {
-fetchRecentEmployees();
+    fetchRecentEmployees();
 });
 
 // View all employees
 viewEmployeesBtn.addEventListener('click', () => {
-employeesModal.classList.remove('hidden');
-employeesModal.classList.add('flex');
-fetchEmployees();
+    employeesModal.classList.remove('hidden');
+    employeesModal.classList.add('flex');
+    fetchEmployees();
 });
 
 // Close employees modal
 closeEmployeesModalBtn.addEventListener('click', () => {
-employeesModal.classList.add('hidden');
-employeesModal.classList.remove('flex');
+    employeesModal.classList.add('hidden');
+    employeesModal.classList.remove('flex');
 });
 
 // Search employees (debounced)
 const debouncedEmpSearch = debounce((event) => {
-const searchTerm = event.target.value.trim();
-fetchEmployees(searchTerm);
+    const searchTerm = event.target.value.trim();
+    fetchEmployees(searchTerm);
 });
 
 searchEmployeesInput.addEventListener('input', debouncedEmpSearch);
 
 // Open employee modal
 addEmployeeBtn.addEventListener('click', () => {
-openEmployeeModal();
+    openEmployeeModal();
 });
 
 mobileAddEmployeeBtn.addEventListener('click', () => {
-openEmployeeModal();
+    openEmployeeModal();
 });
 
 // Cancel employee form
 cancelEmployeeBtn.addEventListener('click', () => {
-employeeModal.classList.add('hidden');
-employeeModal.classList.remove('flex');
+    employeeModal.classList.add('hidden');
+    employeeModal.classList.remove('flex');
 });
 
 // Submit employee form (create or update)
 employeeForm.addEventListener('submit', async (event) => {
-event.preventDefault();
+    event.preventDefault();
 
-const employeeData = {
-nombre: document.getElementById('employee-name').value,
-apellido: document.getElementById('employee-lastname').value,
-puesto: document.getElementById('employee-position').value,
-salario: document.getElementById('employee-salary').value
-};
+    const employeeData = {
+        firstName: document.getElementById('employee-name').value,
+        lastName: document.getElementById('employee-lastname').value,
+        position: document.getElementById('employee-position').value,
+        salary: document.getElementById('employee-salary').value
+    };
 
-try {
-if (currentEmployeeId) {
-    // Update existing employee
-    await updateEmployee(currentEmployeeId, employeeData);
-    alert('Empleado actualizado exitosamente');
-} else {
-    // Create new employee
-    await createEmployee(employeeData);
-    alert('Empleado registrado exitosamente');
-}
+    try {
+        if (currentEmployeeId) {
+            // Update existing employee
+            await updateEmployee(currentEmployeeId, employeeData);
+            alert('Employee updated successfully');
+        } else {
+            // Create new employee
+            await createEmployee(employeeData);
+            alert('Employee registered successfully');
+        }
 
-employeeModal.classList.add('hidden');
-employeeModal.classList.remove('flex');
+        employeeModal.classList.add('hidden');
+        employeeModal.classList.remove('flex');
 
-// Refresh data
-fetchRecentEmployees();
-if (employeesModal.classList.contains('flex')) {
-    fetchEmployees(searchEmployeesInput.value.trim());
-}
+        // Refresh data
+        fetchRecentEmployees();
+        if (employeesModal.classList.contains('flex')) {
+            fetchEmployees(searchEmployeesInput.value.trim());
+        }
 
-employeeForm.reset();
-} catch (error) {
-alert(`Error: ${error.response ? error.response.data : error.message}`);
-}
+        employeeForm.reset();
+    } catch (error) {
+        alert(`Error: ${error.response ? error.response.data : error.message}`);
+    }
 });
 
 // Close employee details modal
 closeEmpDetailsModalBtn.addEventListener('click', () => {
-employeeDetailsModal.classList.add('hidden');
-employeeDetailsModal.classList.remove('flex');
+    employeeDetailsModal.classList.add('hidden');
+    employeeDetailsModal.classList.remove('flex');
 });
 
 // Edit employee button
 editEmployeeBtn.addEventListener('click', async () => {
-try {
-const employee = await fetchEmployeeById(currentEmployeeId);
-employeeDetailsModal.classList.add('hidden');
-employeeDetailsModal.classList.remove('flex');
-openEmployeeModal(employee);
-} catch (error) {
-alert(`Error al obtener información del empleado: ${error.message}`);
-}
+    try {
+        const employee = await fetchEmployeeById(currentEmployeeId);
+        employeeDetailsModal.classList.add('hidden');
+        employeeDetailsModal.classList.remove('flex');
+        openEmployeeModal(employee);
+    } catch (error) {
+        alert(`Error retrieving employee information: ${error.message}`);
+    }
 });
 
 // Delete employee button
 deleteEmployeeBtn.addEventListener('click', () => {
-showEmployeeDeleteConfirmation();
+    showEmployeeDeleteConfirmation();
 });
 
 // Cancel employee delete
 cancelEmpDeleteBtn.addEventListener('click', () => {
-deleteEmpConfirmModal.classList.add('hidden');
-deleteEmpConfirmModal.classList.remove('flex');
-employeeDetailsModal.classList.remove('hidden');
-employeeDetailsModal.classList.add('flex');
+    deleteEmpConfirmModal.classList.add('hidden');
+    deleteEmpConfirmModal.classList.remove('flex');
+    employeeDetailsModal.classList.remove('hidden');
+    employeeDetailsModal.classList.add('flex');
 });
 
 // Confirm employee delete
 confirmEmpDeleteBtn.addEventListener('click', async () => {
-try {
-await deleteEmployee(currentEmployeeId);
-deleteEmpConfirmModal.classList.add('hidden');
-deleteEmpConfirmModal.classList.remove('flex');
+    try {
+        await deleteEmployee(currentEmployeeId);
+        deleteEmpConfirmModal.classList.add('hidden');
+        deleteEmpConfirmModal.classList.remove('flex');
 
-// Refresh data
-fetchRecentEmployees();
-if (employeesModal.classList.contains('flex')) {
-    fetchEmployees(searchEmployeesInput.value.trim());
-}
+        // Refresh data
+        fetchRecentEmployees();
+        if (employeesModal.classList.contains('flex')) {
+            fetchEmployees(searchEmployeesInput.value.trim());
+        }
 
-alert('Empleado eliminado exitosamente');
-} catch (error) {
-alert(`Error al eliminar empleado: ${error.message}`);
-deleteEmpConfirmModal.classList.add('hidden');
-deleteEmpConfirmModal.classList.remove('flex');
-}
+        alert('Employee deleted successfully');
+    } catch (error) {
+        alert(`Error deleting employee: ${error.message}`);
+        deleteEmpConfirmModal.classList.add('hidden');
+        deleteEmpConfirmModal.classList.remove('flex');
+    }
 });
