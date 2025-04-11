@@ -1,1000 +1,1827 @@
+// API base URL
 const API_BASE_URL = 'http://localhost:8080/api';
         
-// DOM Elements
-const clientsListModal = document.getElementById('clients-list-modal');
-const clientsModal = document.getElementById('clients-modal');
-const viewClientsBtn = document.getElementById('view-clients-btn');
-const closeClientsModalBtn = document.getElementById('close-clients-modal');
-const clientModal = document.getElementById('client-modal');
-const clientModalTitle = document.getElementById('client-modal-title');
-const addClientBtn = document.getElementById('add-client');
-const mobileAddClientBtn = document.getElementById('mobile-add-client');
-const cancelClientBtn = document.getElementById('cancel-client');
-const clientForm = document.getElementById('client-form');
-const submitClientBtn = document.getElementById('submit-client');
-const searchClientsInput = document.getElementById('clients-search-modal');
-const recentClientsList = document.getElementById('recent-clients');
-const clientDetailsModal = document.getElementById('client-details-modal');
-const closeDetailsModalBtn = document.getElementById('close-details-modal');
-const clientDetailsContent = document.getElementById('client-details-content');
-const editClientBtn = document.getElementById('edit-client');
-const deleteClientBtn = document.getElementById('delete-client');
-const deleteConfirmModal = document.getElementById('delete-confirm-modal');
-const cancelDeleteBtn = document.getElementById('cancel-delete');
-const confirmDeleteBtn = document.getElementById('confirm-delete');
-const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-const mobileMenu = document.getElementById('mobile-menu');
-const closeMobileMenuBtn = document.getElementById('close-mobile-menu');
-const navLinks = document.querySelectorAll('.nav-link');
-const applyFiltersBtn = document.getElementById('apply-filters');
-const filterInputs = {
-    name: document.getElementById('filter-name'),
-    phone: document.getElementById('filter-phone'),
-    email: document.getElementById('filter-email')
-};
+// DOM Elements - Navigation
+const sidenavLinks = document.querySelectorAll('.sidenav-link');
+const sections = document.querySelectorAll('.section');
+const toggleSidenavBtn = document.getElementById('toggleSidenav');
+const sidenav = document.getElementById('sidenav');
 
-let currentClientId = null;
-let currentPage = 'clients';
+// DOM Elements - Stats
+const clientCount = document.getElementById('clientCount');
+const dishCount = document.getElementById('dishCount');
+const employeeCount = document.getElementById('employeeCount');
+const orderCount = document.getElementById('orderCount');
 
-// Navigation handling
-function showPage(pageId) {
-    document.querySelectorAll('.page-content').forEach(page => {
-        page.classList.add('hidden');
-    });
-    document.getElementById(`page-${pageId}`).classList.remove('hidden');
+// DOM Elements - Alerts
+const successAlert = document.getElementById('successAlert');
+const errorAlert = document.getElementById('errorAlert');
+const loadingSpinner = document.getElementById('loadingSpinner');
+
+// DOM Elements - Tables
+const recentOrdersTableBody = document.getElementById('recentOrdersTableBody');
+const employeeTableBody = document.getElementById('employeeTableBody');
+const dishTableBody = document.getElementById('dishTableBody');
+const dishGrid = document.getElementById('dishGrid');
+const clientTableBody = document.getElementById('clientTableBody');
+const orderTableBody = document.getElementById('orderTableBody');
+
+// DOM Elements - Modals
+const employeeModal = document.getElementById('employeeModal');
+const dishModal = document.getElementById('dishModal');
+const clientModal = document.getElementById('clientModal');
+const orderModal = document.getElementById('orderModal');
+const orderDetailModal = document.getElementById('orderDetailModal');
+const confirmationModal = document.getElementById('confirmationModal');
+
+// DOM Elements - Forms
+const employeeForm = document.getElementById('employeeForm');
+const dishForm = document.getElementById('dishForm');
+const clientForm = document.getElementById('clientForm');
+const orderForm = document.getElementById('orderForm');
+
+// DOM Elements - Search
+const employeeSearchInput = document.getElementById('employeeSearchInput');
+const employeeSearchBtn = document.getElementById('employeeSearchBtn');
+const dishSearchInput = document.getElementById('dishSearchInput');
+const dishSearchBtn = document.getElementById('dishSearchBtn');
+const clientSearchInput = document.getElementById('clientSearchInput');
+const clientSearchBtn = document.getElementById('clientSearchBtn');
+const orderSearchInput = document.getElementById('orderSearchInput');
+const orderSearchBtn = document.getElementById('orderSearchBtn');
+
+// DOM Elements - View Toggles
+const tableViewBtn = document.getElementById('tableViewBtn');
+const gridViewBtn = document.getElementById('gridViewBtn');
+const dishTableView = document.getElementById('dishTableView');
+const dishGridView = document.getElementById('dishGridView');
+
+// Variables to track current operations
+let currentDeleteId = null;
+let currentDeleteType = null;
+let currentOrderId = null;
+
+// Helper function to create DOM elements
+function createElement(tag, properties = {}) {
+    const element = document.createElement(tag);
     
-    navLinks.forEach(link => {
-        link.classList.remove('active', 'bg-green-700');
-        if (link.dataset.page === pageId) {
-            link.classList.add('active', 'bg-green-700');
-        }
-    });
-    
-    currentPage = pageId;
-    
-    // Close mobile menu
-    mobileMenu.classList.remove('open');
-}
-
-navLinks.forEach(link => {
-    link.addEventListener('click', (event) => {
-        event.preventDefault();
-        showPage(link.dataset.page);
-    });
-});
-
-// Mobile menu handling
-mobileMenuBtn.addEventListener('click', () => {
-    mobileMenu.classList.add('open');
-});
-
-closeMobileMenuBtn.addEventListener('click', () => {
-    mobileMenu.classList.remove('open');
-});
-
-mobileAddClientBtn.addEventListener('click', () => {
-    openClientModal();
-});
-
-// CRUD Operations
-
-// Fetch all clients
-async function fetchClients(searchTerm = '') {
-    try {
-        const url = searchTerm 
-            ? `${API_BASE_URL}/clients/search?term=${encodeURIComponent(searchTerm)}`
-            : `${API_BASE_URL}/clients`;
-
-        const response = await axios.get(url);
-        const clients = response.data;
-
-        if (clients.length === 0) {
-            clientsListModal.innerHTML = `
-                <div class="text-center text-gray-500 p-4 animate-fade-in">
-                    No clients found${searchTerm ? ` for "${searchTerm}"` : ''}.
-                </div>
-            `;
-            return clients;
-        }
-
-        clientsListModal.innerHTML = clients.map(client => {
-            const highlightTerm = (text) => {
-                if (!searchTerm) return text;
-                const regex = new RegExp(`(${searchTerm})`, 'gi');
-                return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-            };
-
-            return `
-                <div class="client-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all animate-fade-in cursor-pointer" 
-                    data-client-id="${client.idClient}" onclick="viewClientDetails('${client.idClient}')">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-lg">
-                                ${highlightTerm(client.firstName || '')} ${highlightTerm(client.lastName || '')}
-                            </p>
-                            <p class="text-sm text-gray-600 mt-1">
-                                <i class="fas fa-envelope mr-2 text-green-600"></i>${highlightTerm(client.email || '')}
-                            </p>
-                        </div>
-                        <span class="text-green-700 flex items-center">
-                            <i class="fas fa-phone mr-2"></i>${client.phone || 'N/A'}
-                        </span>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        return clients;
-    } catch (error) {
-        console.error('Error fetching clients:', error);
-        clientsListModal.innerHTML = `
-            <div class="text-center text-red-500 animate-fade-in">
-                Error loading clients. 
-                ${error.response ? error.response.data : error.message}
-            </div>
-        `;
-        return [];
+    // Set properties
+    if (properties.className) {
+        element.className = properties.className;
     }
-}
-
-// Fetch client by ID
-async function fetchClientById(id) {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/clients/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error(`Error fetching client with ID ${id}:`, error);
-        throw error;
-    }
-}
-
-// Fetch Recent Clients for Dashboard
-async function fetchRecentClients() {
-    try {
-        const clients = await fetchClients();
-        // Show just the last 5 clients
-        const recentClients = clients.slice(0, 5);
-        
-        if (recentClients.length === 0) {
-            recentClientsList.innerHTML = `
-                <div class="text-center text-gray-500 p-4">
-                    No registered clients.
-                </div>
-            `;
-            return;
-        }
-        
-        recentClientsList.innerHTML = recentClients.map(client => `
-            <div class="client-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                data-client-id="${client.idClient}" onclick="viewClientDetails('${client.idClient}')">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-bold text-lg">${client.firstName || ''} ${client.lastName || ''}</p>
-                        <p class="text-sm text-gray-600 mt-1">
-                            <i class="fas fa-envelope mr-2 text-green-600"></i>${client.email || ''}
-                        </p>
-                    </div>
-                    <span class="text-green-700 flex items-center">
-                        <i class="fas fa-phone mr-2"></i>${client.phone || 'N/A'}
-                    </span>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error fetching recent clients:', error);
-        recentClientsList.innerHTML = `
-            <div class="text-center text-red-500 p-4">
-                Error loading recent clients.
-            </div>
-        `;
-    }
-}
-
-// Filter clients
-async function filterClients() {
-    const filters = {
-        firstName: filterInputs.name.value.trim(),
-        phone: filterInputs.phone.value.trim(),
-        email: filterInputs.email.value.trim()
-    };
     
-    try {
-        // We could adjust this to use a specific filter endpoint if available
-        const url = new URL(`${API_BASE_URL}/clients/filter`);
-        
-        // Add filter parameters
-        for (const [key, value] of Object.entries(filters)) {
-            if (value) {
-                url.searchParams.append(key, value);
+    if (properties.id) {
+        element.id = properties.id;
+    }
+    
+    if (properties.textContent) {
+        element.textContent = properties.textContent;
+    }
+    
+    if (properties.innerText) {
+        element.innerText = properties.innerText;
+    }
+    
+    if (properties.innerHTML) {
+        element.innerHTML = properties.innerHTML;
+    }
+    
+    if (properties.attributes) {
+        for (const [key, value] of Object.entries(properties.attributes)) {
+            element.setAttribute(key, value);
+        }
+    }
+    
+    if (properties.dataset) {
+        for (const [key, value] of Object.entries(properties.dataset)) {
+            element.dataset[key] = value;
+        }
+    }
+    
+    if (properties.style) {
+        for (const [key, value] of Object.entries(properties.style)) {
+            element.style[key] = value;
+        }
+    }
+    
+    if (properties.events) {
+        for (const [event, handler] of Object.entries(properties.events)) {
+            element.addEventListener(event, handler);
+        }
+    }
+    
+    if (properties.children) {
+        properties.children.forEach(child => {
+            if (typeof child === 'string') {
+                element.appendChild(document.createTextNode(child));
+            } else {
+                element.appendChild(child);
             }
+        });
+    }
+    
+    return element;
+}
+
+// Helper function to create table cells
+function createTableCell(content, className) {
+    const cell = document.createElement('td');
+    if (className) {
+        cell.className = className;
+    }
+    
+    if (typeof content === 'string' || typeof content === 'number') {
+        cell.textContent = content;
+    } else {
+        cell.appendChild(content);
+    }
+    
+    return cell;
+}
+
+// Helper function to create buttons
+function createButton(icon, className, clickHandler, dataset = {}) {
+    const button = createElement('button', {
+        className: className,
+        dataset: dataset,
+        events: {
+            click: clickHandler
         }
+    });
+    
+    button.appendChild(createElement('i', { className: icon }));
+    
+    return button;
+}
+
+// Helper function to create a no data row for tables
+function createNoDataRow(message, colSpan) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.textContent = message;
+    cell.colSpan = colSpan;
+    cell.style.textAlign = 'center';
+    row.appendChild(cell);
+    return row;
+}
+
+// Event Listeners - Navigation
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize data
+    fetchDashboardData();
+    
+    // Event listeners for navigation
+    sidenavLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetSection = link.getAttribute('data-section');
+            activateSection(targetSection);
+            
+            // Load section data if needed
+            if (targetSection === 'staff') {
+                fetchEmployees();
+            } else if (targetSection === 'menu') {
+                fetchDishes();
+            } else if (targetSection === 'clients') {
+                fetchClients();
+            } else if (targetSection === 'orders') {
+                fetchOrders();
+            }
+            
+            // Close sidenav on mobile
+            if (window.innerWidth < 992) {
+                sidenav.classList.remove('active');
+            }
+        });
+    });
+    
+    // Toggle sidenav on mobile
+    toggleSidenavBtn.addEventListener('click', () => {
+        sidenav.classList.toggle('active');
+    });
+    
+    // Add Employee Button
+    document.getElementById('addEmployeeBtn').addEventListener('click', showAddEmployeeModal);
+    
+    // Add Dish Button
+    document.getElementById('addDishBtn').addEventListener('click', showAddDishModal);
+    
+    // Add Client Button
+    document.getElementById('addClientBtn').addEventListener('click', showAddClientModal);
+    
+    // Add Order Button
+    document.getElementById('addOrderBtn').addEventListener('click', showAddOrderModal);
+    
+    // Close Modals
+    document.getElementById('closeEmployeeModal').addEventListener('click', closeEmployeeModal);
+    document.getElementById('cancelEmployeeBtn').addEventListener('click', closeEmployeeModal);
+    document.getElementById('closeDishModal').addEventListener('click', closeDishModal);
+    document.getElementById('cancelDishBtn').addEventListener('click', closeDishModal);
+    document.getElementById('closeClientModal').addEventListener('click', closeClientModal);
+    document.getElementById('cancelClientBtn').addEventListener('click', closeClientModal);
+    document.getElementById('closeOrderModal').addEventListener('click', closeOrderModal);
+    document.getElementById('cancelOrderBtn').addEventListener('click', closeOrderModal);
+    document.getElementById('closeOrderDetailModal').addEventListener('click', closeOrderDetailModal);
+    document.getElementById('closeOrderDetailBtn').addEventListener('click', closeOrderDetailModal);
+    document.getElementById('closeConfirmModal').addEventListener('click', closeConfirmModal);
+    document.getElementById('cancelDeleteBtn').addEventListener('click', closeConfirmModal);
+    
+    // Form Submissions
+    employeeForm.addEventListener('submit', handleEmployeeFormSubmit);
+    dishForm.addEventListener('submit', handleDishFormSubmit);
+    clientForm.addEventListener('submit', handleClientFormSubmit);
+    orderForm.addEventListener('submit', handleOrderFormSubmit);
+    
+    // Search Functionality
+    employeeSearchBtn.addEventListener('click', handleEmployeeSearch);
+    dishSearchBtn.addEventListener('click', handleDishSearch);
+    clientSearchBtn.addEventListener('click', handleClientSearch);
+    orderSearchBtn.addEventListener('click', handleOrderSearch);
+    
+    employeeSearchInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+            handleEmployeeSearch();
+        }
+    });
+    
+    dishSearchInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+            handleDishSearch();
+        }
+    });
+    
+    clientSearchInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+            handleClientSearch();
+        }
+    });
+    
+    orderSearchInput.addEventListener('keyup', (event) => {
+        if (event.key === 'Enter') {
+            handleOrderSearch();
+        }
+    });
+    
+    // View Toggles
+    tableViewBtn.addEventListener('click', showTableView);
+    gridViewBtn.addEventListener('click', showGridView);
+    
+    // Delete Confirmation
+    document.getElementById('confirmDeleteBtn').addEventListener('click', confirmDelete);
+    
+    // Add Order Item
+    document.getElementById('addOrderItemBtn').addEventListener('click', addOrderItemRow);
+});
+
+// Functions - Navigation
+function activateSection(sectionId) {
+    // Update active link
+    sidenavLinks.forEach(link => {
+        if (link.getAttribute('data-section') === sectionId) {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+    
+    // Show active section
+    sections.forEach(section => {
+        if (section.id === sectionId) {
+            section.classList.add('active');
+        } else {
+            section.classList.remove('active');
+        }
+    });
+}
+
+// Functions - Dashboard
+async function fetchDashboardData() {
+    showLoading();
+    try {
+        // Fetch counts for each entity
+        const [clientsResponse, dishesResponse, employeesResponse, ordersResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/clients`),
+            fetch(`${API_BASE_URL}/menu`),
+            fetch(`${API_BASE_URL}/employees`),
+            fetch(`${API_BASE_URL}/orders`)
+        ]);
         
-        const response = await axios.get(url.toString());
-        const clients = response.data;
+        const clients = await clientsResponse.json();
+        const dishes = await dishesResponse.json();
+        const employees = await employeesResponse.json();
+        const orders = await ordersResponse.json();
         
-        // Update recent clients list with filtered results
-        if (clients.length === 0) {
-            recentClientsList.innerHTML = `
-                <div class="text-center text-gray-500 p-4 animate-fade-in">
-                    No clients found with the applied filters.
-                </div>
-            `;
+        // Update dashboard counts
+        clientCount.textContent = Array.isArray(clients) ? clients.length : 0;
+        dishCount.textContent = Array.isArray(dishes) ? dishes.length : 0;
+        employeeCount.textContent = Array.isArray(employees) ? employees.length : 0;
+        orderCount.textContent = Array.isArray(orders) ? orders.length : 0;
+        
+        // Make sure orders is an array before using slice
+        if (!Array.isArray(orders)) {
+            console.error('Orders data is not an array:', orders);
+            recentOrdersTableBody.innerHTML = '';
+            recentOrdersTableBody.appendChild(createNoDataRow('No orders found or invalid data format', 6));
             return;
         }
         
-        recentClientsList.innerHTML = clients.map(client => `
-            <div class="client-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                data-client-id="${client.idClient}" onclick="viewClientDetails('${client.idClient}')">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-bold text-lg">${client.firstName || ''} ${client.lastName || ''}</p>
-                        <p class="text-sm text-gray-600 mt-1">
-                            <i class="fas fa-envelope mr-2 text-green-600"></i>${client.email || ''}
-                        </p>
-                    </div>
-                    <span class="text-green-700 flex items-center">
-                        <i class="fas fa-phone mr-2"></i>${client.phone || 'N/A'}
-                    </span>
-                </div>
-            </div>
-        `).join('');
+        // Display recent orders (limit to 5)
+        const recentOrders = orders.slice(0, 5);
+        
+        // Get customer names for each order
+        const customerIds = recentOrders.map(order => order.idCustomer);
+        const clientsById = {};
+        
+        if (Array.isArray(clients)) {
+            clients.forEach(client => {
+                clientsById[client.idClient] = `${client.firstName} ${client.lastName}`;
+            });
+        }
+        
+        // Populate recent orders table
+        recentOrdersTableBody.innerHTML = '';
+        
+        if (recentOrders.length === 0) {
+            recentOrdersTableBody.appendChild(createNoDataRow('No orders found', 6));
+            return;
+        }
+        
+        recentOrders.forEach(order => {
+            const row = createRecentOrderRow(order, clientsById);
+            recentOrdersTableBody.appendChild(row);
+        });
         
     } catch (error) {
-        console.error('Error applying filters:', error);
-        recentClientsList.innerHTML = `
-            <div class="text-center text-red-500 p-4">
-                Error filtering clients: ${error.response ? error.response.data : error.message}
-            </div>
-        `;
+        console.error('Dashboard data error:', error);
+        showError('Failed to load dashboard data: ' + error.message);
+    } finally {
+        hideLoading();
     }
 }
 
-// Create client
-async function createClient(clientData) {
-    try {
-        const response = await axios.post(`${API_BASE_URL}/clients`, clientData);
-        return response.data;
-    } catch (error) {
-        console.error('Error creating client:', error);
-        throw error;
-    }
-}
-
-// Update client
-async function updateClient(id, clientData) {
-    try {
-        const response = await axios.put(`${API_BASE_URL}/clients/${id}`, clientData);
-        return response.data;
-    } catch (error) {
-        console.error(`Error updating client with ID ${id}:`, error);
-        throw error;
-    }
-}
-
-// Delete client
-async function deleteClient(id) {
-    try {
-        await axios.delete(`${API_BASE_URL}/clients/${id}`);
-        return true;
-    } catch (error) {
-        console.error(`Error deleting client with ID ${id}:`, error);
-        throw error;
-    }
-}
-
-// UI Interactions
-
-// Open client modal (for create or edit)
-function openClientModal(client = null) {
-    // Reset form and set mode (create or edit)
-    clientForm.reset();
+// Create recent order table row
+function createRecentOrderRow(order, clientsById) {
+    const row = document.createElement('tr');
+    const orderDate = order.date ? new Date(order.date) : new Date();
     
-    if (client) {
-        // Edit mode
-        clientModalTitle.textContent = 'Edit Client';
-        document.getElementById('client-id').value = client.idClient;
-        document.getElementById('client-name').value = client.firstName || '';
-        document.getElementById('client-lastname').value = client.lastName || '';
-        document.getElementById('client-email').value = client.email || '';
-        document.getElementById('client-phone').value = client.phone || '';
-        document.getElementById('client-address').value = client.address || '';
-        submitClientBtn.textContent = 'Update';
-        currentClientId = client.idClient;
-    } else {
-        // Create mode
-        clientModalTitle.textContent = 'Register New Client';
-        document.getElementById('client-id').value = '';
-        submitClientBtn.textContent = 'Register';
-        currentClientId = null;
+    // Order ID column
+    row.appendChild(createTableCell(`#${order.idOrder}`));
+    
+    // Customer column
+    row.appendChild(createTableCell(clientsById[order.idCustomer] || 'Unknown'));
+    
+    // Date column
+    row.appendChild(createTableCell(orderDate.toLocaleDateString()));
+    
+    // Status column
+    const statusCell = createTableCell('', '');
+    const statusSpan = createElement('span', {
+        className: `status-label status-${(order.status || 'pending').toLowerCase()}`,
+        textContent: order.status || 'Pending'
+    });
+    statusCell.appendChild(statusSpan);
+    row.appendChild(statusCell);
+    
+    // Total column (placeholder value)
+    row.appendChild(createTableCell('$120.00'));
+    
+    // Actions column
+    const actionsCell = createTableCell('', 'table-actions');
+    const viewButton = createButton('fas fa-eye', 'btn btn-sm btn-primary view-order-btn', 
+        () => showOrderDetails(order.idOrder), { id: order.idOrder });
+    actionsCell.appendChild(viewButton);
+    row.appendChild(actionsCell);
+    
+    return row;
+}
+
+// Functions - Employees
+async function fetchEmployees() {
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/employees`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch employees');
+        }
+        const employees = await response.json();
+        displayEmployees(employees);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function displayEmployees(employees) {
+    employeeTableBody.innerHTML = '';
+    
+    if (employees.length === 0) {
+        employeeTableBody.appendChild(createNoDataRow('No employees found', 5));
+        return;
     }
     
-    clientModal.classList.remove('hidden');
-    clientModal.classList.add('flex');
+    employees.forEach(employee => {
+        const row = createEmployeeRow(employee);
+        employeeTableBody.appendChild(row);
+    });
 }
 
-// View client details
-async function viewClientDetails(id) {
+function createEmployeeRow(employee) {
+    const row = document.createElement('tr');
+    
+    // Employee ID column
+    row.appendChild(createTableCell(`#${employee.idEmployee}`));
+    
+    // Name column
+    row.appendChild(createTableCell(`${employee.firstName} ${employee.lastName}`));
+    
+    // Position column
+    row.appendChild(createTableCell(employee.position));
+    
+    // Salary column
+    row.appendChild(createTableCell(employee.salary.toFixed(2)));
+    
+    // Actions column
+    const actionsCell = createTableCell('', 'table-actions');
+    
+    const editButton = createButton('fas fa-edit', 'btn btn-sm btn-warning edit-employee-btn', 
+        () => showEditEmployeeModal(employee.idEmployee), { id: employee.idEmployee });
+    
+    const deleteButton = createButton('fas fa-trash', 'btn btn-sm btn-danger delete-employee-btn', 
+        () => showDeleteConfirmation('employee', employee.idEmployee), { id: employee.idEmployee });
+    
+    actionsCell.appendChild(editButton);
+    actionsCell.appendChild(deleteButton);
+    row.appendChild(actionsCell);
+    
+    return row;
+}
+
+function showAddEmployeeModal() {
+    document.getElementById('employeeModalTitle').textContent = 'Add New Employee';
+    employeeForm.reset();
+    document.getElementById('employeeId').value = '';
+    employeeModal.classList.add('active');
+}
+
+async function showEditEmployeeModal(id) {
+    showLoading();
     try {
-        const client = await fetchClientById(id);
-        currentClientId = id;
+        const response = await fetch(`${API_BASE_URL}/employees/${id}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch employee details');
+        }
+        const employee = await response.json();
         
-        clientDetailsContent.innerHTML = `
-            <div class="bg-green-50 p-4 rounded-lg">
-                <div class="flex items-center mb-4">
-                    <div class="bg-green-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
-                        <i class="fas fa-user text-xl"></i>
-                    </div>
-                    <h4 class="text-xl font-bold ml-3">${client.firstName || ''} ${client.lastName || ''}</h4>
-                </div>
-                
-                <div class="space-y-3">
-                    <div class="flex items-start">
-                        <div class="w-8 text-green-600"><i class="fas fa-envelope"></i></div>
-                        <div>${client.email || 'N/A'}</div>
-                    </div>
-                    <div class="flex items-start">
-                        <div class="w-8 text-green-600"><i class="fas fa-phone"></i></div>
-                        <div>${client.phone || 'N/A'}</div>
-                    </div>
-                    <div class="flex items-start">
-                        <div class="w-8 text-green-600"><i class="fas fa-map-marker-alt"></i></div>
-                        <div>${client.address || 'N/A'}</div>
-                    </div>
-                    <div class="flex items-start">
-                        <div class="w-8 text-green-600"><i class="fas fa-calendar-alt"></i></div>
-                        <div>Client since: ${new Date(client.registrationDate || Date.now()).toLocaleDateString('en-US')}</div>
-                    </div>
-                </div>
-            </div>
-        `;
+        document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
+        document.getElementById('employeeId').value = employee.idEmployee;
+        document.getElementById('firstName').value = employee.firstName;
+        document.getElementById('lastName').value = employee.lastName;
+        document.getElementById('position').value = employee.position;
+        document.getElementById('salary').value = employee.salary;
         
-        // Show client details modal
-        clientDetailsModal.classList.remove('hidden');
-        clientDetailsModal.classList.add('flex');
-        
-        // If the clients modal is open, close it
-        clientsModal.classList.add('hidden');
-        clientsModal.classList.remove('flex');
+        employeeModal.classList.add('active');
     } catch (error) {
-        alert(`Error loading client details: ${error.message}`);
+        showError(error.message);
+    } finally {
+        hideLoading();
     }
 }
 
-// Show delete confirmation
-function showDeleteConfirmation() {
-    deleteConfirmModal.classList.remove('hidden');
-    deleteConfirmModal.classList.add('flex');
-    clientDetailsModal.classList.add('hidden');
-    clientDetailsModal.classList.remove('flex');
+function closeEmployeeModal() {
+    employeeModal.classList.remove('active');
 }
 
-// Debounce function for search
-function debounce(func, timeout = 300) {
-    let timer;
-    return (...args) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+async function handleEmployeeFormSubmit(event) {
+    event.preventDefault();
+    
+    const employeeData = {
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        position: document.getElementById('position').value,
+        salary: parseFloat(document.getElementById('salary').value)
     };
+    
+    const id = document.getElementById('employeeId').value;
+    const isEditing = id !== '';
+    
+    showLoading();
+    try {
+        let response;
+        
+        if (isEditing) {
+            // Update existing employee
+            employeeData.idEmployee = parseInt(id);
+            response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employeeData)
+            });
+        } else {
+            // Create new employee
+            response = await fetch(`${API_BASE_URL}/employees`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(employeeData)
+            });
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Failed to ${isEditing ? 'update' : 'create'} employee`);
+        }
+        
+        const result = await response.text();
+        showSuccess(result);
+        closeEmployeeModal();
+        fetchEmployees();
+        fetchDashboardData(); // Update dashboard counts
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
 }
 
-// Event Listeners
-
-// Global function for client details view (needs to be accessible from HTML)
-window.viewClientDetails = viewClientDetails;
-
-// Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    // Show default page
-    showPage(currentPage);
+async function handleEmployeeSearch() {
+    const searchTerm = employeeSearchInput.value.trim();
     
-    // Load recent clients
-    fetchRecentClients();
-});
+    if (searchTerm === '') {
+        fetchEmployees();
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/employees/search?term=${encodeURIComponent(searchTerm)}`);
+        if (!response.ok) {
+            throw new Error('Failed to search employees');
+        }
+        const employees = await response.json();
+        displayEmployees(employees);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
 
-// View all clients
-viewClientsBtn.addEventListener('click', () => {
-    clientsModal.classList.remove('hidden');
-    clientsModal.classList.add('flex');
-    fetchClients();
-});
+// Functions - Dishes
+async function fetchDishes() {
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/menu`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch dishes');
+        }
+        const dishes = await response.json();
+        displayDishes(dishes);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
 
-// Close clients modal
-closeClientsModalBtn.addEventListener('click', () => {
-    clientsModal.classList.add('hidden');
-    clientsModal.classList.remove('flex');
-});
+function displayDishes(dishes) {
+    // Clear previous data
+    dishTableBody.innerHTML = '';
+    dishGrid.innerHTML = '';
+    
+    if (dishes.length === 0) {
+        dishTableBody.appendChild(createNoDataRow('No dishes found', 5));
+        return;
+    }
+    
+    // Populate table view
+    dishes.forEach(dish => {
+        const row = createDishTableRow(dish);
+        dishTableBody.appendChild(row);
+    });
+    
+    // Populate grid view
+    dishes.forEach(dish => {
+        const gridItem = createDishGridItem(dish);
+        dishGrid.appendChild(gridItem);
+    });
+}
 
-// Search clients (debounced)
-const debouncedSearch = debounce((event) => {
-    const searchTerm = event.target.value.trim();
-    fetchClients(searchTerm);
-});
+function createDishTableRow(dish) {
+    const row = document.createElement('tr');
+    
+    // Dish ID column
+    row.appendChild(createTableCell(`#${dish.idDish}`));
+    
+    // Name column
+    row.appendChild(createTableCell(dish.name));
+    
+    // Description column
+    row.appendChild(createTableCell(dish.description));
+    
+    // Price column
+    row.appendChild(createTableCell(dish.price.toFixed(2)));
+    
+    // Actions column
+    const actionsCell = createTableCell('', 'table-actions');
+    
+    const editButton = createButton('fas fa-edit', 'btn btn-sm btn-warning edit-dish-btn', 
+        () => showEditDishModal(dish.idDish), { id: dish.idDish });
+    
+    const deleteButton = createButton('fas fa-trash', 'btn btn-sm btn-danger delete-dish-btn', 
+        () => showDeleteConfirmation('dish', dish.idDish), { id: dish.idDish });
+    
+    actionsCell.appendChild(editButton);
+    actionsCell.appendChild(deleteButton);
+    row.appendChild(actionsCell);
+    
+    return row;
+}
 
-searchClientsInput.addEventListener('input', debouncedSearch);
+function createDishGridItem(dish) {
+    const gridItem = createElement('div', {
+        className: 'menu-item'
+    });
+    
+    // Header with dish name
+    const headerDiv = createElement('div', {
+        className: 'menu-item-header'
+    });
+    
+    const nameHeading = createElement('h3', {
+        className: 'menu-item-name',
+        textContent: dish.name
+    });
+    
+    headerDiv.appendChild(nameHeading);
+    gridItem.appendChild(headerDiv);
+    
+    // Content with description, price, and actions
+    const contentDiv = createElement('div', {
+        className: 'menu-item-content'
+    });
+    
+    const descriptionPara = createElement('p', {
+        className: 'menu-item-description',
+        textContent: dish.description
+    });
+    
+    const pricePara = createElement('p', {
+        className: 'menu-item-price',
+        textContent: dish.price.toFixed(2)
+    });
+    
+    const actionsDiv = createElement('div', {
+        className: 'menu-item-actions'
+    });
+    
+    // Edit button with text
+    const editButton = createElement('button', {
+        className: 'btn btn-sm btn-warning edit-dish-btn',
+        dataset: { id: dish.idDish },
+        events: {
+            click: () => showEditDishModal(dish.idDish)
+        }
+    });
+    
+    editButton.innerHTML = '<i class="fas fa-edit"></i> Edit';
+    
+    // Delete button with text
+    const deleteButton = createElement('button', {
+        className: 'btn btn-sm btn-danger delete-dish-btn',
+        dataset: { id: dish.idDish },
+        events: {
+            click: () => showDeleteConfirmation('dish', dish.idDish)
+        }
+    });
+    
+    deleteButton.innerHTML = '<i class="fas fa-trash"></i> Delete';
+    
+    actionsDiv.appendChild(editButton);
+    actionsDiv.appendChild(deleteButton);
+    
+    contentDiv.appendChild(descriptionPara);
+    contentDiv.appendChild(pricePara);
+    contentDiv.appendChild(actionsDiv);
+    
+    gridItem.appendChild(contentDiv);
+    
+    return gridItem;
+}
 
-// Apply filters
-applyFiltersBtn.addEventListener('click', filterClients);
+function showTableView() {
+    tableViewBtn.classList.add('active');
+    gridViewBtn.classList.remove('active');
+    dishTableView.style.display = 'block';
+    dishGridView.style.display = 'none';
+}
 
-// Open client modal
-addClientBtn.addEventListener('click', () => {
-    openClientModal();
-});
+function showGridView() {
+    gridViewBtn.classList.add('active');
+    tableViewBtn.classList.remove('active');
+    dishGridView.style.display = 'block';
+    dishTableView.style.display = 'none';
+}
 
-// Cancel client form
-cancelClientBtn.addEventListener('click', () => {
-    clientModal.classList.add('hidden');
-    clientModal.classList.remove('flex');
-});
+function showAddDishModal() {
+    document.getElementById('dishModalTitle').textContent = 'Add New Dish';
+    dishForm.reset();
+    document.getElementById('dishId').value = '';
+    dishModal.classList.add('active');
+}
 
-// Submit client form (create or update)
-clientForm.addEventListener('submit', async (event) => {
+async function showEditDishModal(id) {
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/menu/${id}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch dish details');
+        }
+        const dish = await response.json();
+        
+        document.getElementById('dishModalTitle').textContent = 'Edit Dish';
+        document.getElementById('dishId').value = dish.idDish;
+        document.getElementById('dishName').value = dish.name;
+        document.getElementById('dishDescription').value = dish.description;
+        document.getElementById('dishPrice').value = dish.price;
+        
+        dishModal.classList.add('active');
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function closeDishModal() {
+    dishModal.classList.remove('active');
+}
+
+async function handleDishFormSubmit(event) {
+    event.preventDefault();
+    
+    const dishData = {
+        name: document.getElementById('dishName').value,
+        description: document.getElementById('dishDescription').value,
+        price: parseFloat(document.getElementById('dishPrice').value)
+    };
+    
+    const id = document.getElementById('dishId').value;
+    const isEditing = id !== '';
+    
+    showLoading();
+    try {
+        let response;
+        
+        if (isEditing) {
+            // Update existing dish
+            dishData.idDish = parseInt(id);
+            response = await fetch(`${API_BASE_URL}/menu/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dishData)
+            });
+        } else {
+            // Create new dish
+            response = await fetch(`${API_BASE_URL}/menu`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(dishData)
+            });
+        }
+        
+        if (!response.ok) {
+            throw new Error(`Failed to ${isEditing ? 'update' : 'create'} dish`);
+        }
+        
+        const result = await response.text();
+        showSuccess(result);
+        closeDishModal();
+        fetchDishes();
+        fetchDashboardData(); // Update dashboard counts
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleDishSearch() {
+    const searchTerm = dishSearchInput.value.trim();
+    
+    if (searchTerm === '') {
+        fetchDishes();
+        return;
+    }
+    
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/menu/search?term=${encodeURIComponent(searchTerm)}`);
+        if (!response.ok) {
+            throw new Error('Failed to search dishes');
+        }
+        const dishes = await response.json();
+        displayDishes(dishes);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Functions - Clients
+async function fetchClients() {
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/clients`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch clients');
+        }
+        const clients = await response.json();
+        displayClients(clients);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function displayClients(clients) {
+    clientTableBody.innerHTML = '';
+    
+    if (clients.length === 0) {
+        clientTableBody.appendChild(createNoDataRow('No clients found', 5));
+        return;
+    }
+    
+    clients.forEach(client => {
+        const row = createClientRow(client);
+        clientTableBody.appendChild(row);
+    });
+}
+
+function createClientRow(client) {
+    const row = document.createElement('tr');
+    
+    // Client ID column
+    row.appendChild(createTableCell(`#${client.idClient}`));
+    
+    // Name column
+    row.appendChild(createTableCell(`${client.firstName} ${client.lastName}`));
+    
+    // Email column
+    row.appendChild(createTableCell(client.email || '-'));
+    
+    // Phone column
+    row.appendChild(createTableCell(client.phone || '-'));
+    
+    // Actions column
+    const actionsCell = createTableCell('', 'table-actions');
+    
+    const editButton = createButton('fas fa-edit', 'btn btn-sm btn-warning edit-client-btn', 
+        () => showEditClientModal(client.idClient), { id: client.idClient });
+    
+    const deleteButton = createButton('fas fa-trash', 'btn btn-sm btn-danger delete-client-btn', 
+        () => showDeleteConfirmation('client', client.idClient), { id: client.idClient });
+    
+    actionsCell.appendChild(editButton);
+    actionsCell.appendChild(deleteButton);
+    row.appendChild(actionsCell);
+    
+    return row;
+}
+
+function showAddClientModal() {
+    document.getElementById('clientModalTitle').textContent = 'Add New Client';
+    clientForm.reset();
+    document.getElementById('clientId').value = '';
+    clientModal.classList.add('active');
+}
+
+async function showEditClientModal(id) {
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/clients/${id}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch client details');
+        }
+        const client = await response.json();
+        
+        document.getElementById('clientModalTitle').textContent = 'Edit Client';
+        document.getElementById('clientId').value = client.idClient;
+        document.getElementById('clientFirstName').value = client.firstName;
+        document.getElementById('clientLastName').value = client.lastName;
+        document.getElementById('clientEmail').value = client.email || '';
+        document.getElementById('clientPhone').value = client.phone || '';
+        
+        clientModal.classList.add('active');
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function closeClientModal() {
+    clientModal.classList.remove('active');
+}
+
+async function handleClientFormSubmit(event) {
     event.preventDefault();
     
     const clientData = {
-        firstName: document.getElementById('client-name').value,
-        lastName: document.getElementById('client-lastname').value,
-        email: document.getElementById('client-email').value,
-        phone: document.getElementById('client-phone').value,
-        address: document.getElementById('client-address').value
+        firstName: document.getElementById('clientFirstName').value,
+        lastName: document.getElementById('clientLastName').value,
+        email: document.getElementById('clientEmail').value,
+        phone: document.getElementById('clientPhone').value
     };
     
+    const id = document.getElementById('clientId').value;
+    const isEditing = id !== '';
+    
+    showLoading();
     try {
-        if (currentClientId) {
+        let response;
+        
+        if (isEditing) {
             // Update existing client
-            await updateClient(currentClientId, clientData);
-            alert('Client updated successfully');
+            clientData.idClient = parseInt(id);
+            response = await fetch(`${API_BASE_URL}/clients/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(clientData)
+            });
         } else {
             // Create new client
-            await createClient(clientData);
-            alert('Client registered successfully');
+            response = await fetch(`${API_BASE_URL}/clients`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(clientData)
+            });
         }
         
-        clientModal.classList.add('hidden');
-        clientModal.classList.remove('flex');
-        
-        // Refresh data
-        fetchRecentClients();
-        if (clientsModal.classList.contains('flex')) {
-            fetchClients(searchClientsInput.value.trim());
+        if (!response.ok) {
+            throw new Error(`Failed to ${isEditing ? 'update' : 'create'} client`);
         }
         
-        clientForm.reset();
+        const result = await response.text();
+        showSuccess(result);
+        closeClientModal();
+        fetchClients();
+        fetchDashboardData(); // Update dashboard counts
     } catch (error) {
-        alert(`Error: ${error.response ? error.response.data : error.message}`);
+        showError(error.message);
+    } finally {
+        hideLoading();
     }
-});
+}
 
-// Close client details modal
-closeDetailsModalBtn.addEventListener('click', () => {
-    clientDetailsModal.classList.add('hidden');
-    clientDetailsModal.classList.remove('flex');
-});
-
-// Edit client button
-editClientBtn.addEventListener('click', async () => {
+async function handleClientSearch() {
+    const searchTerm = clientSearchInput.value.trim();
+    
+    if (searchTerm === '') {
+        fetchClients();
+        return;
+    }
+    
+    showLoading();
     try {
-        const client = await fetchClientById(currentClientId);
-        clientDetailsModal.classList.add('hidden');
-        clientDetailsModal.classList.remove('flex');
-        openClientModal(client);
+        const response = await fetch(`${API_BASE_URL}/clients/search?term=${encodeURIComponent(searchTerm)}`);
+        if (!response.ok) {
+            throw new Error('Failed to search clients');
+        }
+        const clients = await response.json();
+        displayClients(clients);
     } catch (error) {
-        alert(`Error getting client information: ${error.message}`);
+        showError(error.message);
+    } finally {
+        hideLoading();
     }
-});
+}
 
-// Delete client button
-deleteClientBtn.addEventListener('click', () => {
-    showDeleteConfirmation();
-});
-
-// Cancel delete
-cancelDeleteBtn.addEventListener('click', () => {
-    deleteConfirmModal.classList.add('hidden');
-    deleteConfirmModal.classList.remove('flex');
-    clientDetailsModal.classList.remove('hidden');
-    clientDetailsModal.classList.add('flex');
-});
-
-// Confirm delete
-confirmDeleteBtn.addEventListener('click', async () => {
+// Functions - Orders
+async function fetchOrders() {
+    showLoading();
     try {
-        await deleteClient(currentClientId);
-        deleteConfirmModal.classList.add('hidden');
-        deleteConfirmModal.classList.remove('flex');
+        const response = await fetch(`${API_BASE_URL}/orders`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch orders');
+        }
+        const orders = await response.json();
         
-        // Refresh data
-        fetchRecentClients();
-        if (clientsModal.classList.contains('flex')) {
-            fetchClients(searchClientsInput.value.trim());
-        }
+        // Fetch clients to get names
+        const clientsResponse = await fetch(`${API_BASE_URL}/clients`);
+        const clients = await clientsResponse.json();
         
-        alert('Client deleted successfully');
+        // Create a map of client IDs to names
+        const clientMap = {};
+        clients.forEach(client => {
+            clientMap[client.idClient] = `${client.firstName} ${client.lastName}`;
+        });
+        
+        displayOrders(orders, clientMap);
+        
+        // Also populate the customer dropdown for new orders
+        populateCustomerDropdown(clients);
     } catch (error) {
-        alert(`Error deleting client: ${error.message}`);
-        deleteConfirmModal.classList.add('hidden');
-        deleteConfirmModal.classList.remove('flex');
+        showError(error.message);
+    } finally {
+        hideLoading();
     }
-});
+}
 
-// DOM Elements - Employees
-const employeesListModal = document.getElementById('employees-list-modal');
-const employeesModal = document.getElementById('employees-modal');
-const viewEmployeesBtn = document.getElementById('view-employees-btn');
-const closeEmployeesModalBtn = document.getElementById('close-employees-modal');
-const employeeModal = document.getElementById('employee-modal');
-const employeeModalTitle = document.getElementById('employee-modal-title');
-const addEmployeeBtn = document.getElementById('add-employee');
-const mobileAddEmployeeBtn = document.getElementById('mobile-add-employee');
-const cancelEmployeeBtn = document.getElementById('cancel-employee');
-const employeeForm = document.getElementById('employee-form');
-const submitEmployeeBtn = document.getElementById('submit-employee');
-const searchEmployeesInput = document.getElementById('employees-search-modal');
-const recentEmployeesList = document.getElementById('recent-employees');
-const employeeDetailsModal = document.getElementById('employee-details-modal');
-const closeEmpDetailsModalBtn = document.getElementById('close-emp-details-modal');
-const employeeDetailsContent = document.getElementById('employee-details-content');
-const editEmployeeBtn = document.getElementById('edit-employee');
-const deleteEmployeeBtn = document.getElementById('delete-employee');
-const deleteEmpConfirmModal = document.getElementById('delete-emp-confirm-modal');
-const cancelEmpDeleteBtn = document.getElementById('cancel-emp-delete');
-const confirmEmpDeleteBtn = document.getElementById('confirm-emp-delete');
-const employeeFilterInputs = {
-    name: document.getElementById('filter-emp-name'),
-    position: document.getElementById('filter-emp-position')
-};
+function displayOrders(orders, clientMap) {
+    orderTableBody.innerHTML = '';
+    
+    if (orders.length === 0) {
+        orderTableBody.appendChild(createNoDataRow('No orders found', 5));
+        return;
+    }
+    
+    orders.forEach(order => {
+        const row = createOrderRow(order, clientMap);
+        orderTableBody.appendChild(row);
+    });
+}
 
-let currentEmployeeId = null;
+function createOrderRow(order, clientMap) {
+    const row = document.createElement('tr');
+    const orderDate = new Date(order.date);
+    
+    // Order ID column
+    row.appendChild(createTableCell(`#${order.idOrder}`));
+    
+    // Customer column
+    row.appendChild(createTableCell(clientMap[order.idCustomer] || 'Unknown'));
+    
+    // Date column
+    row.appendChild(createTableCell(orderDate.toLocaleDateString()));
+    
+    // Status column
+    const statusCell = document.createElement('td');
+    const statusSpan = createElement('span', {
+        className: `status-label status-${order.status.toLowerCase()}`,
+        textContent: order.status
+    });
+    statusCell.appendChild(statusSpan);
+    row.appendChild(statusCell);
+    
+    // Actions column
+    const actionsCell = createTableCell('', 'table-actions');
+    
+    const viewButton = createButton('fas fa-eye', 'btn btn-sm btn-primary view-order-btn', 
+        () => showOrderDetails(order.idOrder), { id: order.idOrder });
+    
+    const editButton = createButton('fas fa-edit', 'btn btn-sm btn-warning edit-order-btn', 
+        () => showEditOrderModal(order.idOrder), { id: order.idOrder });
+    
+    const deleteButton = createButton('fas fa-trash', 'btn btn-sm btn-danger delete-order-btn', 
+        () => showDeleteConfirmation('order', order.idOrder), { id: order.idOrder });
+    
+    actionsCell.appendChild(viewButton);
+    actionsCell.appendChild(editButton);
+    actionsCell.appendChild(deleteButton);
+    row.appendChild(actionsCell);
+    
+    return row;
+}
 
-// CRUD Operations for Employees
+function populateCustomerDropdown(clients) {
+    const customerSelect = document.getElementById('orderCustomer');
+    customerSelect.innerHTML = '';
+    
+    // Add default option
+    const defaultOption = createElement('option', {
+        attributes: { value: '' },
+        textContent: 'Select a customer'
+    });
+    customerSelect.appendChild(defaultOption);
+    
+    clients.forEach(client => {
+        const option = createElement('option', {
+            attributes: { value: client.idClient },
+            textContent: `${client.firstName} ${client.lastName}`
+        });
+        customerSelect.appendChild(option);
+    });
+}
 
-// Fetch all employees
-async function fetchEmployees(searchTerm = '') {
+function showAddOrderModal() {
+    document.getElementById('orderModalTitle').textContent = 'Create New Order';
+    orderForm.reset();
+    document.getElementById('orderId').value = '';
+    
+    // Clear previous order items
+    document.getElementById('orderItems').innerHTML = '';
+    // Add first empty row
+    addOrderItemRow();
+    
+    orderModal.classList.add('active');
+}
+
+async function showEditOrderModal(id) {
+    showLoading();
     try {
-        const url = searchTerm 
-            ? `${API_BASE_URL}/employees/search?term=${encodeURIComponent(searchTerm)}`
-            : `${API_BASE_URL}/employees`;
-
-        const response = await axios.get(url);
-        const employees = response.data;
-
-        if (employees.length === 0) {
-            employeesListModal.innerHTML = `
-                <div class="text-center text-gray-500 p-4 animate-fade-in">
-                    No employees found${searchTerm ? ` for "${searchTerm}"` : ''}.
-                </div>
-            `;
-            return employees;
+        // Fetch order details
+        const orderResponse = await fetch(`${API_BASE_URL}/orders/${id}`);
+        if (!orderResponse.ok) {
+            throw new Error('Failed to fetch order details');
         }
-
-        employeesListModal.innerHTML = employees.map(employee => {
-            const highlightTerm = (text) => {
-                if (!searchTerm) return text;
-                const regex = new RegExp(`(${searchTerm})`, 'gi');
-                return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-            };
-
-            return `
-                <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all animate-fade-in cursor-pointer" 
-                    data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-lg">
-                                ${highlightTerm(employee.firstName || '')} ${highlightTerm(employee.lastName || '')}
-                            </p>
-                        </div>
-                        <div class="text-blue-700">
-                            <div class="flex items-center mb-1">
-                                <i class="fas fa-id-badge mr-2"></i>${highlightTerm(employee.position || 'N/A')}
-                            </div>
-                            <div class="flex items-center text-sm">
-                                <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-
-        return employees;
-    } catch (error) {
-        console.error('Error fetching employees:', error);
-        employeesListModal.innerHTML = `
-            <div class="text-center text-red-500 animate-fade-in">
-                Error loading employees. 
-                ${error.response ? error.response.data : error.message}
-            </div>
-        `;
-        return [];
-    }
-}
-
-// Fetch employee by ID
-async function fetchEmployeeById(id) {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/employees/${id}`);
-        return response.data;
-    } catch (error) {
-        console.error(`Error fetching employee with ID ${id}:`, error);
-        throw error;
-    }
-}
-
-// Fetch Recent Employees for Dashboard
-async function fetchRecentEmployees() {
-    try {
-        const response = await axios.get(`${API_BASE_URL}/employees/recent`);
-        const recentEmployees = response.data;
-
-        if (recentEmployees.length === 0) {
-            recentEmployeesList.innerHTML = `
-                <div class="text-center text-gray-500 p-4">
-                    No employees registered.
-                </div>
-            `;
-            return;
+        const order = await orderResponse.json();
+        
+        // Fetch order items
+        const orderItemsResponse = await fetch(`${API_BASE_URL}/order-details/order/${id}`);
+        if (!orderItemsResponse.ok) {
+            throw new Error('Failed to fetch order items');
         }
-
-        recentEmployeesList.innerHTML = recentEmployees.map(employee => `
-            <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-bold text-lg">${employee.firstName || ''} ${employee.lastName || ''}</p>
-                    </div>
-                    <div class="text-blue-700">
-                        <div class="flex items-center mb-1">
-                            <i class="fas fa-id-badge mr-2"></i>${employee.position || 'N/A'}
-                        </div>
-                        <div class="flex items-center text-sm">
-                            <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        console.error('Error fetching recent employees:', error);
-        // If specific route fails, try with all employees
-        try {
-            const allEmployees = await fetchEmployees();
-            const recentEmployees = allEmployees.slice(0, 5);
-            
-            if (recentEmployees.length === 0) {
-                recentEmployeesList.innerHTML = `
-                    <div class="text-center text-gray-500 p-4">
-                        No employees registered.
-                    </div>
-                `;
-                return;
-            }
-            
-            recentEmployeesList.innerHTML = recentEmployees.map(employee => `
-                <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                    data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-lg">${employee.firstName || ''} ${employee.lastName || ''}</p>
-                        </div>
-                        <div class="text-blue-700">
-                            <div class="flex items-center mb-1">
-                                <i class="fas fa-id-badge mr-2"></i>${employee.position || 'N/A'}
-                            </div>
-                            <div class="flex items-center text-sm">
-                                <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        } catch (innerError) {
-            recentEmployeesList.innerHTML = `
-                <div class="text-center text-red-500 p-4">
-                    Error loading recent employees.
-                </div>
-            `;
-        }
-    }
-}
-
-// Filter employees
-async function filterEmployees() {
-    const filters = {
-        firstName: employeeFilterInputs.name.value.trim(),
-        position: employeeFilterInputs.position.value.trim()
-    };
-
-    try {
-        const url = new URL(`${API_BASE_URL}/employees/filter`);
-
-        // Add filter parameters
-        for (const [key, value] of Object.entries(filters)) {
-            if (value) {
-                url.searchParams.append(key, value);
-            }
-        }
-
-        const response = await axios.get(url.toString());
-        const employees = response.data;
-
-        if (employees.length === 0) {
-            recentEmployeesList.innerHTML = `
-                <div class="text-center text-gray-500 p-4 animate-fade-in">
-                    No employees found with the applied filters.
-                </div>
-            `;
-            return;
-        }
-
-        recentEmployeesList.innerHTML = employees.map(employee => `
-            <div class="employee-card p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all cursor-pointer"
-                data-employee-id="${employee.idEmployee}" onclick="viewEmployeeDetails(${employee.idEmployee})">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <p class="font-bold text-lg">${employee.firstName || ''} ${employee.lastName || ''}</p>
-                    </div>
-                    <div class="text-blue-700">
-                        <div class="flex items-center mb-1">
-                            <i class="fas fa-id-badge mr-2"></i>${employee.position || 'N/A'}
-                        </div>
-                        <div class="flex items-center text-sm">
-                            <i class="fas fa-money-bill-wave mr-2"></i>$${employee.salary || 'N/A'}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `).join('');
-
-    } catch (error) {
-        console.error('Error applying filters:', error);
-        recentEmployeesList.innerHTML = `
-            <div class="text-center text-red-500 p-4">
-                Error filtering employees: ${error.response ? error.response.data : error.message}
-            </div>
-        `;
-    }
-}
-
-// Create employee
-async function createEmployee(employeeData) {
-    try {
-        const response = await axios.post(`${API_BASE_URL}/employees`, employeeData);
-        return response.data;
-    } catch (error) {
-        console.error('Error creating employee:', error);
-        throw error;
-    }
-}
-
-// Update employee
-async function updateEmployee(id, employeeData) {
-    try {
-        const response = await axios.put(`${API_BASE_URL}/employees/${id}`, employeeData);
-        return response.data;
-    } catch (error) {
-        console.error(`Error updating employee with ID ${id}:`, error);
-        throw error;
-    }
-}
-
-// Delete employee
-async function deleteEmployee(id) {
-    try {
-        await axios.delete(`${API_BASE_URL}/employees/${id}`);
-        return true;
-    } catch (error) {
-        console.error(`Error deleting employee with ID ${id}:`, error);
-        throw error;
-    }
-}
-
-// UI Interactions for Employees
-
-// Open employee modal (for create or edit)
-function openEmployeeModal(employee = null) {
-    // Reset form and set mode (create or edit)
-    employeeForm.reset();
-
-    if (employee) {
-        // Edit mode
-        employeeModalTitle.textContent = 'Edit Employee';
-        document.getElementById('employee-id').value = employee.idEmployee;
-        document.getElementById('employee-name').value = employee.firstName || '';
-        document.getElementById('employee-lastname').value = employee.lastName || '';
-        document.getElementById('employee-position').value = employee.position || '';
-        document.getElementById('employee-salary').value = employee.salary || '';
-        submitEmployeeBtn.textContent = 'Update';
-        currentEmployeeId = employee.idEmployee;
-    } else {
-        // Create mode
-        employeeModalTitle.textContent = 'Register New Employee';
-        document.getElementById('employee-id').value = '';
-        submitEmployeeBtn.textContent = 'Register';
-        currentEmployeeId = null;
-    }
-
-    employeeModal.classList.remove('hidden');
-    employeeModal.classList.add('flex');
-}
-
-// View employee details
-async function viewEmployeeDetails(id) {
-    try {
-        const employee = await fetchEmployeeById(id);
-        currentEmployeeId = id;
-
-        employeeDetailsContent.innerHTML = `
-            <div class="bg-blue-50 p-4 rounded-lg">
-                <div class="flex items-center mb-4">
-                    <div class="bg-blue-600 text-white rounded-full w-12 h-12 flex items-center justify-center">
-                        <i class="fas fa-user-tie text-xl"></i>
-                    </div>
-                    <h4 class="text-xl font-bold ml-3">${employee.firstName || ''} ${employee.lastName || ''}</h4>
-                </div>
-                
-                <div class="space-y-3">
-                    <div class="flex items-start">
-                        <div class="w-8 text-blue-600"><i class="fas fa-id-badge"></i></div>
-                        <div>${employee.position || 'N/A'}</div>
-                    </div>
-                    <div class="flex items-start">
-                        <div class="w-8 text-blue-600"><i class="fas fa-money-bill-wave"></i></div>
-                        <div>$${employee.salary || 'N/A'}</div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        // Show employee details modal
-        employeeDetailsModal.classList.remove('hidden');
-        employeeDetailsModal.classList.add('flex');
-
-        // If the employees modal is open, close it
-        employeesModal.classList.add('hidden');
-        employeesModal.classList.remove('flex');
-    } catch (error) {
-        alert(`Error loading employee details: ${error.message}`);
-    }
-}
-
-// Show delete confirmation for employee
-function showEmployeeDeleteConfirmation() {
-    deleteEmpConfirmModal.classList.remove('hidden');
-    deleteEmpConfirmModal.classList.add('flex');
-    employeeDetailsModal.classList.add('hidden');
-    employeeDetailsModal.classList.remove('flex');
-}
-
-// Event Listeners for Employee Management
-
-// Global function for employee details view
-window.viewEmployeeDetails = viewEmployeeDetails;
-
-// Load recent employees on page load
-document.addEventListener('DOMContentLoaded', () => {
-    fetchRecentEmployees();
-});
-
-// View all employees
-viewEmployeesBtn.addEventListener('click', () => {
-    employeesModal.classList.remove('hidden');
-    employeesModal.classList.add('flex');
-    fetchEmployees();
-});
-
-// Close employees modal
-closeEmployeesModalBtn.addEventListener('click', () => {
-    employeesModal.classList.add('hidden');
-    employeesModal.classList.remove('flex');
-});
-
-// Search employees (debounced)
-const debouncedEmpSearch = debounce((event) => {
-    const searchTerm = event.target.value.trim();
-    fetchEmployees(searchTerm);
-});
-
-searchEmployeesInput.addEventListener('input', debouncedEmpSearch);
-
-// Open employee modal
-addEmployeeBtn.addEventListener('click', () => {
-    openEmployeeModal();
-});
-
-mobileAddEmployeeBtn.addEventListener('click', () => {
-    openEmployeeModal();
-});
-
-// Cancel employee form
-cancelEmployeeBtn.addEventListener('click', () => {
-    employeeModal.classList.add('hidden');
-    employeeModal.classList.remove('flex');
-});
-
-// Submit employee form (create or update)
-employeeForm.addEventListener('submit', async (event) => {
-    event.preventDefault();
-
-    const employeeData = {
-        firstName: document.getElementById('employee-name').value,
-        lastName: document.getElementById('employee-lastname').value,
-        position: document.getElementById('employee-position').value,
-        salary: document.getElementById('employee-salary').value
-    };
-
-    try {
-        if (currentEmployeeId) {
-            // Update existing employee
-            await updateEmployee(currentEmployeeId, employeeData);
-            alert('Employee updated successfully');
+        const orderItems = await orderItemsResponse.json();
+        
+        // Set form values
+        document.getElementById('orderModalTitle').textContent = 'Edit Order';
+        document.getElementById('orderId').value = order.idOrder;
+        document.getElementById('orderCustomer').value = order.idCustomer;
+        document.getElementById('orderStatus').value = order.status;
+        
+        // Clear and populate order items
+        const orderItemsContainer = document.getElementById('orderItems');
+        orderItemsContainer.innerHTML = '';
+        
+        if (orderItems.length === 0) {
+            // Add an empty row if no items
+            addOrderItemRow();
         } else {
-            // Create new employee
-            await createEmployee(employeeData);
-            alert('Employee registered successfully');
+            // Add rows for each item
+            orderItems.forEach(item => {
+                addOrderItemRow(item);
+            });
         }
-
-        employeeModal.classList.add('hidden');
-        employeeModal.classList.remove('flex');
-
-        // Refresh data
-        fetchRecentEmployees();
-        if (employeesModal.classList.contains('flex')) {
-            fetchEmployees(searchEmployeesInput.value.trim());
-        }
-
-        employeeForm.reset();
+        
+        orderModal.classList.add('active');
     } catch (error) {
-        alert(`Error: ${error.response ? error.response.data : error.message}`);
+        showError(error.message);
+    } finally {
+        hideLoading();
     }
-});
+}
 
-// Close employee details modal
-closeEmpDetailsModalBtn.addEventListener('click', () => {
-    employeeDetailsModal.classList.add('hidden');
-    employeeDetailsModal.classList.remove('flex');
-});
+function closeOrderModal() {
+    orderModal.classList.remove('active');
+}
 
-// Edit employee button
-editEmployeeBtn.addEventListener('click', async () => {
+function addOrderItemRow(item = null) {
+    // Fetch dishes if needed for dropdown
+    const dishesPromise = fetch(`${API_BASE_URL}/menu`)
+        .then(response => response.json())
+        .catch(error => {
+            showError('Failed to load dishes: ' + error.message);
+            return [];
+        });
+    
+    dishesPromise.then(dishes => {
+        const orderItemsContainer = document.getElementById('orderItems');
+        
+        // Create row container
+        const itemRow = createElement('div', {
+            className: 'order-item-row',
+            style: {
+                display: 'grid',
+                gridTemplateColumns: '1fr 100px 100px 50px',
+                gap: '10px',
+                marginBottom: '10px',
+                alignItems: 'center'
+            }
+        });
+        
+        // Create dish select
+        const dishSelect = createElement('select', {
+            className: 'form-control',
+            attributes: { required: 'true' }
+        });
+        
+        // Add default option
+        const defaultOption = createElement('option', {
+            attributes: { value: '' },
+            textContent: 'Select a dish'
+        });
+        dishSelect.appendChild(defaultOption);
+        
+        // Add dish options
+        dishes.forEach(dish => {
+            const option = createElement('option', {
+                attributes: { value: dish.idDish },
+                textContent: `${dish.name} - ${dish.price.toFixed(2)}`,
+                dataset: { price: dish.price }
+            });
+            dishSelect.appendChild(option);
+        });
+        
+        // If editing, select the correct dish
+        if (item) {
+            dishSelect.value = item.idDish;
+        }
+        
+        // Create quantity input
+        const quantityInput = createElement('input', {
+            attributes: {
+                type: 'number',
+                min: '1',
+                required: 'true'
+            },
+            className: 'form-control',
+            value: item ? item.quantity : '1'
+        });
+        
+        // Create price input (readonly)
+        const priceInput = createElement('input', {
+            attributes: {
+                type: 'number',
+                readonly: 'true'
+            },
+            className: 'form-control',
+            value: item ? item.price.toFixed(2) : ''
+        });
+        
+        // Create remove button
+        const removeBtn = createElement('button', {
+            attributes: { type: 'button' },
+            className: 'btn btn-danger btn-sm',
+            innerHTML: '<i class="fas fa-times"></i>',
+            events: {
+                click: () => {
+                    itemRow.remove();
+                }
+            }
+        });
+        
+        // Event listener to update price when dish changes
+        dishSelect.addEventListener('change', () => {
+            const selectedOption = dishSelect.options[dishSelect.selectedIndex];
+            if (selectedOption.dataset.price) {
+                priceInput.value = parseFloat(selectedOption.dataset.price).toFixed(2);
+            } else {
+                priceInput.value = '';
+            }
+        });
+        
+        // Add elements to row
+        itemRow.appendChild(dishSelect);
+        itemRow.appendChild(quantityInput);
+        itemRow.appendChild(priceInput);
+        itemRow.appendChild(removeBtn);
+        
+        // Add row to container
+        orderItemsContainer.appendChild(itemRow);
+    });
+}
+
+async function handleOrderFormSubmit(event) {
+    event.preventDefault();
+    
+    const orderId = document.getElementById('orderId').value;
+    const customerId = document.getElementById('orderCustomer').value;
+    const status = document.getElementById('orderStatus').value;
+    
+    if (!customerId) {
+        showError('Please select a customer');
+        return;
+    }
+    
+    // Collect order items
+    const orderItemRows = document.querySelectorAll('.order-item-row');
+    const orderItems = [];
+    
+    orderItemRows.forEach(row => {
+        const dishSelect = row.querySelector('select');
+        const quantityInput = row.querySelectorAll('input')[0];
+        const priceInput = row.querySelectorAll('input')[1];
+        
+        if (dishSelect.value && quantityInput.value) {
+            orderItems.push({
+                idDish: parseInt(dishSelect.value),
+                quantity: parseInt(quantityInput.value),
+                price: parseFloat(priceInput.value)
+            });
+        }
+    });
+    
+    if (orderItems.length === 0) {
+        showError('Please add at least one item to the order');
+        return;
+    }
+    
+    showLoading();
     try {
-        const employee = await fetchEmployeeById(currentEmployeeId);
-        employeeDetailsModal.classList.add('hidden');
-        employeeDetailsModal.classList.remove('flex');
-        openEmployeeModal(employee);
-    } catch (error) {
-        alert(`Error retrieving employee information: ${error.message}`);
-    }
-});
-
-// Delete employee button
-deleteEmployeeBtn.addEventListener('click', () => {
-    showEmployeeDeleteConfirmation();
-});
-
-// Cancel employee delete
-cancelEmpDeleteBtn.addEventListener('click', () => {
-    deleteEmpConfirmModal.classList.add('hidden');
-    deleteEmpConfirmModal.classList.remove('flex');
-    employeeDetailsModal.classList.remove('hidden');
-    employeeDetailsModal.classList.add('flex');
-});
-
-// Confirm employee delete
-confirmEmpDeleteBtn.addEventListener('click', async () => {
-    try {
-        await deleteEmployee(currentEmployeeId);
-        deleteEmpConfirmModal.classList.add('hidden');
-        deleteEmpConfirmModal.classList.remove('flex');
-
-        // Refresh data
-        fetchRecentEmployees();
-        if (employeesModal.classList.contains('flex')) {
-            fetchEmployees(searchEmployeesInput.value.trim());
+        // Create or update order
+        const orderData = {
+            idCustomer: parseInt(customerId),
+            status: status,
+            date: new Date().toISOString()
+        };
+        
+        let orderResponse;
+        let savedOrderId;
+        
+        if (orderId) {
+            // Update existing order
+            orderData.idOrder = parseInt(orderId);
+            orderResponse = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            });
+            
+            if (!orderResponse.ok) {
+                throw new Error('Failed to update order');
+            }
+            
+            savedOrderId = orderId;
+            
+            // Delete existing order items
+            const orderDetailsResponse = await fetch(`${API_BASE_URL}/order-details/order/${orderId}`);
+            const existingItems = await orderDetailsResponse.json();
+            
+            // Delete each item
+            for (const item of existingItems) {
+                await fetch(`${API_BASE_URL}/order-details/${item.idDetail}`, {
+                    method: 'DELETE'
+                });
+            }
+        } else {
+            // Create new order
+            orderResponse = await fetch(`${API_BASE_URL}/orders`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            });
+            
+            if (!orderResponse.ok) {
+                throw new Error('Failed to create order');
+            }
+            
+            const orderResult = await orderResponse.text();
+            // Assuming the response contains the new order ID
+            savedOrderId = parseInt(orderResult.match(/\d+/)[0]);
         }
-
-        alert('Employee deleted successfully');
+        
+        // Create order items
+        for (const item of orderItems) {
+            const orderItemData = {
+                idOrder: parseInt(savedOrderId),
+                idDish: item.idDish,
+                quantity: item.quantity,
+                price: item.price
+            };
+            
+            const itemResponse = await fetch(`${API_BASE_URL}/order-details`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderItemData)
+            });
+            
+            if (!itemResponse.ok) {
+                throw new Error('Failed to add order item');
+            }
+        }
+        
+        showSuccess(`Order ${orderId ? 'updated' : 'created'} successfully`);
+        closeOrderModal();
+        fetchOrders();
+        fetchDashboardData(); // Update dashboard counts
     } catch (error) {
-        alert(`Error deleting employee: ${error.message}`);
-        deleteEmpConfirmModal.classList.add('hidden');
-        deleteEmpConfirmModal.classList.remove('flex');
+        showError(error.message);
+    } finally {
+        hideLoading();
     }
-});
+}
+
+async function showOrderDetails(id) {
+    showLoading();
+    try {
+        // Fetch order details
+        const orderResponse = await fetch(`${API_BASE_URL}/orders/${id}`);
+        if (!orderResponse.ok) {
+            throw new Error('Failed to fetch order details');
+        }
+        const order = await orderResponse.json();
+        
+        // Fetch order items
+        const orderItemsResponse = await fetch(`${API_BASE_URL}/order-details/order/${id}`);
+        if (!orderItemsResponse.ok) {
+            throw new Error('Failed to fetch order items');
+        }
+        const orderItems = await orderItemsResponse.json();
+        
+        // Fetch dish details for each item
+        const dishes = await Promise.all(
+            orderItems.map(item => 
+                fetch(`${API_BASE_URL}/menu/${item.idDish}`)
+                .then(response => response.json())
+            )
+        );
+        
+        // Fetch customer details
+        const customerResponse = await fetch(`${API_BASE_URL}/clients/${order.idCustomer}`);
+        const customer = await customerResponse.json();
+        
+        // Create and populate order items
+        createOrderDetailsContent(order, orderItems, dishes, customer);
+        
+        // Set current order ID for status updates
+        currentOrderId = order.idOrder;
+        
+        // Set the current status in the update button
+        const updateOrderStatusBtn = document.getElementById('updateOrderStatusBtn');
+        updateOrderStatusBtn.textContent = `Update Status (${order.status})`;
+        updateOrderStatusBtn.onclick = showOrderStatusUpdateOptions;
+        
+        orderDetailModal.classList.add('active');
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+function createOrderDetailsContent(order, orderItems, dishes, customer) {
+    // Populate order items
+    const orderDetailItems = document.getElementById('orderDetailItems');
+    orderDetailItems.innerHTML = '';
+    
+    let total = 0;
+    
+    orderItems.forEach((item, index) => {
+        const dish = dishes[index];
+        const itemTotal = item.quantity * item.price;
+        total += itemTotal;
+        
+        const itemElement = createElement('div', {
+            className: 'order-item'
+        });
+        
+        const detailsDiv = createElement('div', {
+            className: 'order-item-details'
+        });
+        
+        const nameDiv = createElement('div', {
+            className: 'order-item-name',
+            textContent: dish.name
+        });
+        
+        const priceDiv = createElement('div', {
+            className: 'order-item-price',
+            textContent: `${item.price.toFixed(2)} x ${item.quantity}`
+        });
+        
+        const totalDiv = createElement('div', {
+            className: 'order-item-total',
+            textContent: itemTotal.toFixed(2)
+        });
+        
+        detailsDiv.appendChild(nameDiv);
+        detailsDiv.appendChild(priceDiv);
+        
+        itemElement.appendChild(detailsDiv);
+        itemElement.appendChild(totalDiv);
+        
+        orderDetailItems.appendChild(itemElement);
+    });
+    
+    // Populate order summary
+    const orderDetailSummary = document.getElementById('orderDetailSummary');
+    const orderDate = new Date(order.date);
+    
+    // Create summary container
+    const summaryContainer = createElement('div', {
+        style: { marginBottom: '15px' }
+    });
+    
+    // Create order ID line
+    const orderIdLine = createElement('div', {
+        style: { marginBottom: '5px' }
+    });
+    const orderIdStrong = createElement('strong', {
+        textContent: `Order #${order.idOrder}`
+    });
+    orderIdLine.appendChild(orderIdStrong);
+    
+    // Create date line
+    const dateLine = createElement('div', {
+        style: { marginBottom: '5px' },
+        textContent: `Date: ${orderDate.toLocaleDateString()} ${orderDate.toLocaleTimeString()}`
+    });
+    
+    // Create customer line
+    const customerLine = createElement('div', {
+        style: { marginBottom: '5px' },
+        textContent: `Customer: ${customer.firstName} ${customer.lastName}`
+    });
+    
+    // Create status line
+    const statusLine = createElement('div', {
+        style: { marginBottom: '5px' }
+    });
+    statusLine.textContent = 'Status: ';
+    const statusSpan = createElement('span', {
+        className: `status-label status-${order.status.toLowerCase()}`,
+        textContent: order.status
+    });
+    statusLine.appendChild(statusSpan);
+    
+    // Create order total
+    const totalDiv = createElement('div', {
+        className: 'order-total',
+        textContent: `Total: ${total.toFixed(2)}`
+    });
+    
+    // Add all elements to summary container
+    summaryContainer.appendChild(orderIdLine);
+    summaryContainer.appendChild(dateLine);
+    summaryContainer.appendChild(customerLine);
+    summaryContainer.appendChild(statusLine);
+    
+    // Clear previous content and add new content
+    orderDetailSummary.innerHTML = '';
+    orderDetailSummary.appendChild(summaryContainer);
+    orderDetailSummary.appendChild(totalDiv);
+}
+
+function closeOrderDetailModal() {
+    orderDetailModal.classList.remove('active');
+    currentOrderId = null;
+}
+
+function showOrderStatusUpdateOptions() {
+    const statusOptions = ['Pending', 'Processing', 'Completed', 'Cancelled'];
+    
+    // Create status options container
+    const orderStatusContainer = createElement('div', {
+        style: {
+            position: 'absolute',
+            backgroundColor: 'white',
+            boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            zIndex: '1100'
+        }
+    });
+    
+    // Position relative to the button
+    const button = document.getElementById('updateOrderStatusBtn');
+    const buttonRect = button.getBoundingClientRect();
+    orderStatusContainer.style.top = `${buttonRect.bottom + 5}px`;
+    orderStatusContainer.style.right = `${window.innerWidth - buttonRect.right}px`;
+    
+    // Create option elements
+    statusOptions.forEach(status => {
+        const statusOption = createElement('div', {
+            textContent: status,
+            style: {
+                padding: '10px 15px',
+                cursor: 'pointer',
+                transition: 'background-color 0.3s'
+            },
+            events: {
+                mouseover: (e) => {
+                    e.target.style.backgroundColor = '#f5f5f5';
+                },
+                mouseout: (e) => {
+                    e.target.style.backgroundColor = 'white';
+                },
+                click: () => {
+                    updateOrderStatus(status);
+                    document.body.removeChild(orderStatusContainer);
+                }
+            }
+        });
+        
+        orderStatusContainer.appendChild(statusOption);
+    });
+    
+    document.body.appendChild(orderStatusContainer);
+    
+    // Close when clicking outside
+    const closeStatusOptions = (event) => {
+        if (!orderStatusContainer.contains(event.target) && event.target !== button) {
+            document.body.removeChild(orderStatusContainer);
+            document.removeEventListener('click', closeStatusOptions);
+        }
+    };
+    
+    // Delay adding the event listener to prevent immediate closure
+    setTimeout(() => {
+        document.addEventListener('click', closeStatusOptions);
+    }, 100);
+}
+
+async function updateOrderStatus(status) {
+    if (!currentOrderId) return;
+    
+    showLoading();
+    try {
+        const response = await fetch(`${API_BASE_URL}/orders/${currentOrderId}/status?status=${status}`, {
+            method: 'PUT'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to update order status');
+        }
+        
+        showSuccess(`Order status updated to ${status}`);
+        closeOrderDetailModal();
+        fetchOrders();
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+async function handleOrderSearch() {
+    const searchTerm = orderSearchInput.value.trim();
+    
+    if (searchTerm === '') {
+        fetchOrders();
+        return;
+    }
+    
+    showLoading();
+    try {
+        const clientsResponse = await fetch(`${API_BASE_URL}/clients`);
+        const clients = await clientsResponse.json();
+        
+        // Create a map of client IDs to names
+        const clientMap = {};
+        clients.forEach(client => {
+            clientMap[client.idClient] = `${client.firstName} ${client.lastName}`;
+        });
+        
+        // Fetch all orders and filter in JavaScript
+        // This is a workaround if the API doesn't support searching orders
+        const response = await fetch(`${API_BASE_URL}/orders`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch orders');
+        }
+        
+        const orders = await response.json();
+        const filteredOrders = orders.filter(order => {
+            // Check if order ID contains search term
+            if (order.idOrder.toString().includes(searchTerm)) {
+                return true;
+            }
+            
+            // Check if customer name contains search term
+            const customerName = clientMap[order.idCustomer] || '';
+            if (customerName.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return true;
+            }
+            
+            // Check if status contains search term
+            if (order.status.toLowerCase().includes(searchTerm.toLowerCase())) {
+                return true;
+            }
+            
+            return false;
+        });
+        
+        displayOrders(filteredOrders, clientMap);
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Functions - Delete Confirmation and Actions
+function showDeleteConfirmation(type, id) {
+    currentDeleteType = type;
+    currentDeleteId = id;
+    
+    let message;
+    switch (type) {
+        case 'employee':
+            message = 'Are you sure you want to delete this employee? This action cannot be undone.';
+            break;
+        case 'dish':
+            message = 'Are you sure you want to delete this dish? This action cannot be undone.';
+            break;
+        case 'client':
+            message = 'Are you sure you want to delete this client? This action cannot be undone.';
+            break;
+        case 'order':
+            message = 'Are you sure you want to delete this order? This action cannot be undone.';
+            break;
+        default:
+            message = 'Are you sure you want to delete this item? This action cannot be undone.';
+    }
+    
+    document.getElementById('confirmationMessage').textContent = message;
+    confirmationModal.classList.add('active');
+}
+
+function closeConfirmModal() {
+    confirmationModal.classList.remove('active');
+    currentDeleteType = null;
+    currentDeleteId = null;
+}
+
+async function confirmDelete() {
+    if (!currentDeleteId || !currentDeleteType) return;
+    
+    showLoading();
+    try {
+        let url;
+        switch (currentDeleteType) {
+            case 'employee':
+                url = `${API_BASE_URL}/employees/${currentDeleteId}`;
+                break;
+            case 'dish':
+                url = `${API_BASE_URL}/menu/${currentDeleteId}`;
+                break;
+            case 'client':
+                url = `${API_BASE_URL}/clients/${currentDeleteId}`;
+                break;
+            case 'order':
+                url = `${API_BASE_URL}/orders/${currentDeleteId}`;
+                break;
+            default:
+                throw new Error('Invalid delete type');
+        }
+        
+        const response = await fetch(url, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to delete ${currentDeleteType}`);
+        }
+        
+        const result = await response.text();
+        showSuccess(result);
+        closeConfirmModal();
+        
+        // Refresh the appropriate section
+        switch (currentDeleteType) {
+            case 'employee':
+                fetchEmployees();
+                break;
+            case 'dish':
+                fetchDishes();
+                break;
+            case 'client':
+                fetchClients();
+                break;
+            case 'order':
+                fetchOrders();
+                break;
+        }
+        
+        fetchDashboardData(); // Update dashboard counts
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        hideLoading();
+    }
+}
+
+// Utility Functions
+function showLoading() {
+    loadingSpinner.classList.add('active');
+}
+
+function hideLoading() {
+    loadingSpinner.classList.remove('active');
+}
+
+function showSuccess(message) {
+    successAlert.textContent = message;
+    successAlert.classList.add('active');
+    
+    setTimeout(() => {
+        successAlert.classList.remove('active');
+    }, 3000);
+}
+
+function showError(message) {
+    errorAlert.textContent = message;
+    errorAlert.classList.add('active');
+    
+    setTimeout(() => {
+        errorAlert.classList.remove('active');
+    }, 3000);
+}
