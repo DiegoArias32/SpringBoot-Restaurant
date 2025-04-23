@@ -1,13 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wild Flavor - Acceso</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="../../css/segurity.css">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+        <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self'; 
+        script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/; 
+        style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; 
+        font-src 'self' https://cdnjs.cloudflare.com data:; 
+        img-src 'self' data:; 
+        frame-src https://www.google.com/ https://www.google.com/recaptcha/ https://www.gstatic.com/; 
+        connect-src 'self' http://localhost:8080 http://localhost:5501 http://172.30.3.44:8080 https://www.google.com https://www.gstatic.com;">
+              <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.7.3/sweetalert2.all.min.js"></script>
+        <link rel="stylesheet" href="../../css/security.css">
+        <script src="https://www.google.com/recaptcha/api.js?render=6Lcy8x4rAAAAAKSfqVFXEkhNz_IsFIb_iCn5qOwy"></script>
+    </head>
 <body class="bg-gray-100 font-sans">
 
     <div class="auth-container min-h-screen flex flex-col md:flex-row">
@@ -71,14 +81,16 @@
                 <!-- Login Form -->
                 <form id="login-form" class="space-y-4">
                     <div>
-                        <label class="block text-gray-700 text-sm font-semibold mb-2" for="email">
-                            Correo electrónico
+                        <label class="block text-gray-700 text-sm font-semibold mb-2" for="usernameOrEmail">
+                            Correo electrónico o Usuario
                         </label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                 <i class="fas fa-envelope"></i>
                             </span>
-                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="email" type="email" placeholder="tu@correo.com" required>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                id="usernameOrEmail" type="text" placeholder="tu@correo.com o nombre de usuario" 
+                                autocomplete="username" required>
                         </div>
                     </div>
                     
@@ -90,7 +102,9 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                 <i class="fas fa-lock"></i>
                             </span>
-                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="password" type="password" placeholder="Tu contraseña" required>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                id="password" type="password" placeholder="Tu contraseña" 
+                                autocomplete="current-password" required>
                             <button type="button" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 focus:outline-none" id="toggle-password">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -106,6 +120,10 @@
                         </div>
                         <a href="#" class="text-sm text-green-800 hover:text-green-700">¿Olvidaste tu contraseña?</a>
                     </div>
+
+                    <!-- reCAPTCHA v3 invisible -->
+                    <div id="recaptcha-container"></div>
+                    <input type="hidden" id="recaptcha-token" name="recaptcha-token">
                     
                     <button type="submit" class="btn-wild w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium focus:outline-none">
                         <i class="fas fa-sign-in-alt mr-2"></i>
@@ -143,14 +161,32 @@
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                     <i class="fas fa-user"></i>
                                 </span>
-                                <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="first-name" type="text" placeholder="Nombre" required>
+                                <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                    id="first-name" type="text" placeholder="Nombre" autocomplete="given-name" required 
+                                    pattern="^[\p{L} .'\\-]+$" title="Solo letras y espacios">
                             </div>
                         </div>
                         <div>
                             <label class="block text-gray-700 text-sm font-semibold mb-2" for="last-name">
                                 Apellido
                             </label>
-                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none" id="last-name" type="text" placeholder="Apellido" required>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none" 
+                                id="last-name" type="text" placeholder="Apellido" autocomplete="family-name" required 
+                                pattern="^[\p{L} .'\\-]+$" title="Solo letras y espacios">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-700 text-sm font-semibold mb-2" for="username">
+                            Nombre de usuario
+                        </label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                                <i class="fas fa-user-tag"></i>
+                            </span>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                id="username" type="text" placeholder="Nombre de usuario" autocomplete="username" required 
+                                pattern="^[a-zA-Z0-9._-]+$" title="Solo letras, números, puntos, guiones y guiones bajos">
                         </div>
                     </div>
                     
@@ -162,7 +198,8 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                 <i class="fas fa-envelope"></i>
                             </span>
-                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="register-email" type="email" placeholder="tu@correo.com" required>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                id="register-email" type="email" placeholder="tu@correo.com" autocomplete="email" required>
                         </div>
                     </div>
                     
@@ -174,7 +211,9 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                 <i class="fas fa-phone"></i>
                             </span>
-                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="phone" type="tel" placeholder="Tu número de teléfono" required>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                id="phone" type="tel" placeholder="Tu número de teléfono" autocomplete="tel" 
+                                pattern="^[0-9+()-]*$" title="Solo números y símbolos +, (, ), -">
                         </div>
                     </div>
                     
@@ -188,7 +227,8 @@
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                     <i class="fas fa-briefcase"></i>
                                 </span>
-                                <select class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="position">
+                                <select class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                    id="position">
                                     <option value="" disabled selected>Selecciona tu cargo</option>
                                     <option value="manager">Gerente</option>
                                     <option value="chef">Chef</option>
@@ -211,7 +251,8 @@
                                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                     <i class="fas fa-id-card"></i>
                                 </span>
-                                <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="employee-id" type="text" placeholder="ID proporcionado por administración">
+                                <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                    id="employee-id" type="text" placeholder="ID proporcionado por administración">
                             </div>
                         </div>
                     </div>
@@ -224,10 +265,24 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                 <i class="fas fa-lock"></i>
                             </span>
-                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="register-password" type="password" placeholder="Mínimo 8 caracteres" required>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                id="register-password" type="password" placeholder="Mínimo 8 caracteres" 
+                                autocomplete="new-password" required 
+                                pattern="^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\S+$).{8,}$" 
+                                title="Debe contener al menos un número, una mayúscula, una minúscula, un carácter especial y sin espacios">
                             <button type="button" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 focus:outline-none" id="toggle-register-password">
                                 <i class="fas fa-eye"></i>
                             </button>
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500">
+                            La contraseña debe tener al menos:
+                            <ul class="list-disc pl-5 mt-1">
+                                <li id="length-check" class="text-red-500">8 caracteres</li>
+                                <li id="lowercase-check" class="text-red-500">Una letra minúscula</li>
+                                <li id="uppercase-check" class="text-red-500">Una letra mayúscula</li>
+                                <li id="number-check" class="text-red-500">Un número</li>
+                                <li id="special-check" class="text-red-500">Un carácter especial (@#$%^&+=)</li>
+                            </ul>
                         </div>
                     </div>
                     
@@ -239,7 +294,9 @@
                             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                                 <i class="fas fa-lock"></i>
                             </span>
-                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" id="confirm-password" type="password" placeholder="Confirma tu contraseña" required>
+                            <input class="input-field appearance-none border rounded-lg w-full py-3 px-4 pl-10 text-gray-700 leading-tight focus:outline-none" 
+                                id="confirm-password" type="password" placeholder="Confirma tu contraseña" 
+                                autocomplete="new-password" required>
                         </div>
                     </div>
                     
@@ -249,6 +306,10 @@
                             Acepto los <a href="#" class="text-green-800 hover:underline">términos y condiciones</a>
                         </label>
                     </div>
+                    
+                    <!-- reCAPTCHA v3 invisible para registro -->
+                    <div id="register-recaptcha-container"></div>
+                    <input type="hidden" id="register-recaptcha-token" name="recaptcha-token">
                     
                     <button type="submit" id="register-client-btn" class="btn-wild w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-white font-medium focus:outline-none">
                         <i class="fas fa-user-plus mr-2"></i>
@@ -261,8 +322,6 @@
                     </button>
                 </form>
                 
-                
-
                 <div class="mt-6 text-center text-sm text-gray-600">
                     <p>O continúa con</p>
                     <div class="flex justify-center mt-3 space-x-4">
@@ -282,6 +341,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="../../js/segurity.js"></script>
+    <script src="../../js/security.js"></script>
 </body>
 </html>

@@ -2,22 +2,27 @@ package com.sena.crud_basic.controller;
 
 import com.sena.crud_basic.model.EmployeeDTO;
 import com.sena.crud_basic.service.EmployeeService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/employees")
-@CrossOrigin(origins = "*") // Allow requests from any origin
+@CrossOrigin(origins = "*", 
+             maxAge = 3600, 
+             allowCredentials = "false")  // Cambiar a false para permitir cualquier origen
+@PreAuthorize("hasRole('ADMIN')")
 public class EmployeeController {
 
     @Autowired
     private EmployeeService employeeService;
 
     @PostMapping
-    public ResponseEntity<String> createEmployee(@RequestBody EmployeeDTO employee) {
+    public ResponseEntity<String> createEmployee(@Valid @RequestBody EmployeeDTO employee) {
         String result = employeeService.saveEmployee(employee);
         return ResponseEntity.ok(result);
     }
@@ -38,7 +43,7 @@ public class EmployeeController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> updateEmployee(@PathVariable int id, @RequestBody EmployeeDTO employee) {
+    public ResponseEntity<String> updateEmployee(@PathVariable int id, @Valid @RequestBody EmployeeDTO employee) {
         employee.setIdEmployee(id);
         String result = employeeService.updateEmployee(employee);
         return ResponseEntity.ok(result);

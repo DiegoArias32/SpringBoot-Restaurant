@@ -7,7 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import java.time.LocalDateTime;
 
-@Entity(name = "order")  // Ensure table name matches exactly in your database
+@Entity(name = "orders")  // Ensure table name matches exactly in your database
 public class OrderDTO {
 
     @Id

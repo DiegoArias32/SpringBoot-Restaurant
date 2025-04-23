@@ -1,5 +1,5 @@
 // API base URL
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://172.30.3.44:8080/api';
         
 // DOM Elements - Navigation
 const sidenavLinks = document.querySelectorAll('.sidenav-link');
@@ -298,12 +298,33 @@ function activateSection(sectionId) {
 async function fetchDashboardData() {
     showLoading();
     try {
+        // Asegúrate de tener el token
         // Fetch counts for each entity
         const [clientsResponse, dishesResponse, employeesResponse, ordersResponse] = await Promise.all([
-            fetch(`${API_BASE_URL}/clients`),
-            fetch(`${API_BASE_URL}/menu`),
-            fetch(`${API_BASE_URL}/employees`),
-            fetch(`${API_BASE_URL}/orders`)
+            fetch(`${API_BASE_URL}/clients`, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }),
+            fetch(`${API_BASE_URL}/menu`, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }),
+            fetch(`${API_BASE_URL}/employees`, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }),
+            fetch(`${API_BASE_URL}/orders`, {
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            })
         ]);
         
         const clients = await clientsResponse.json();
@@ -467,19 +488,28 @@ function showAddEmployeeModal() {
 async function showEditEmployeeModal(id) {
     showLoading();
     try {
-        const response = await fetch(`${API_BASE_URL}/employees/${id}`);
+        
+
+        const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+credentials: 'include',
+headers: {
+    'Content-Type': 'application/json'
+},
+        });
+
         if (!response.ok) {
             throw new Error('Failed to fetch employee details');
         }
+
         const employee = await response.json();
-        
+
         document.getElementById('employeeModalTitle').textContent = 'Edit Employee';
         document.getElementById('employeeId').value = employee.idEmployee;
         document.getElementById('firstName').value = employee.firstName;
         document.getElementById('lastName').value = employee.lastName;
         document.getElementById('position').value = employee.position;
         document.getElementById('salary').value = employee.salary;
-        
+
         employeeModal.classList.add('active');
     } catch (error) {
         showError(error.message);
@@ -505,6 +535,9 @@ async function handleEmployeeFormSubmit(event) {
     const id = document.getElementById('employeeId').value;
     const isEditing = id !== '';
     
+    // Obtener el token JWT de localStorage
+    
+
     showLoading();
     try {
         let response;
@@ -514,8 +547,9 @@ async function handleEmployeeFormSubmit(event) {
             employeeData.idEmployee = parseInt(id);
             response = await fetch(`${API_BASE_URL}/employees/${id}`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(employeeData)
             });
@@ -523,8 +557,9 @@ async function handleEmployeeFormSubmit(event) {
             // Create new employee
             response = await fetch(`${API_BASE_URL}/employees`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(employeeData)
             });
@@ -735,7 +770,14 @@ function showAddDishModal() {
 async function showEditDishModal(id) {
     showLoading();
     try {
-        const response = await fetch(`${API_BASE_URL}/menu/${id}`);
+        
+
+        const response = await fetch(`${API_BASE_URL}/menu/${id}`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
         if (!response.ok) {
             throw new Error('Failed to fetch dish details');
         }
@@ -771,6 +813,9 @@ async function handleDishFormSubmit(event) {
     const id = document.getElementById('dishId').value;
     const isEditing = id !== '';
     
+    // Obtener el token JWT de localStorage
+    
+
     showLoading();
     try {
         let response;
@@ -780,8 +825,9 @@ async function handleDishFormSubmit(event) {
             dishData.idDish = parseInt(id);
             response = await fetch(`${API_BASE_URL}/menu/${id}`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(dishData)
             });
@@ -789,8 +835,9 @@ async function handleDishFormSubmit(event) {
             // Create new dish
             response = await fetch(`${API_BASE_URL}/menu`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(dishData)
             });
@@ -907,7 +954,14 @@ function showAddClientModal() {
 async function showEditClientModal(id) {
     showLoading();
     try {
-        const response = await fetch(`${API_BASE_URL}/clients/${id}`);
+        
+
+        const response = await fetch(`${API_BASE_URL}/clients/${id}`, {
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+        });
         if (!response.ok) {
             throw new Error('Failed to fetch client details');
         }
@@ -945,6 +999,9 @@ async function handleClientFormSubmit(event) {
     const id = document.getElementById('clientId').value;
     const isEditing = id !== '';
     
+    // Obtener el token JWT de localStorage
+    
+    
     showLoading();
     try {
         let response;
@@ -954,8 +1011,9 @@ async function handleClientFormSubmit(event) {
             clientData.idClient = parseInt(id);
             response = await fetch(`${API_BASE_URL}/clients/${id}`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(clientData)
             });
@@ -963,8 +1021,9 @@ async function handleClientFormSubmit(event) {
             // Create new client
             response = await fetch(`${API_BASE_URL}/clients`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(clientData)
             });
@@ -985,6 +1044,7 @@ async function handleClientFormSubmit(event) {
         hideLoading();
     }
 }
+
 
 async function handleClientSearch() {
     const searchTerm = clientSearchInput.value.trim();
@@ -1132,11 +1192,17 @@ function showAddOrderModal() {
 async function showEditOrderModal(id) {
     showLoading();
     try {
+        
         // Fetch order details
-        const orderResponse = await fetch(`${API_BASE_URL}/orders/${id}`);
+        const orderResponse = await fetch(`${API_BASE_URL}/orders/${id}`, {
+credentials: 'include',
+headers: {
+    'Content-Type': 'application/json'
+},
+        });
         if (!orderResponse.ok) {
             throw new Error('Failed to fetch order details');
-        }
+        }fetchDashboardData
         const order = await orderResponse.json();
         
         // Fetch order items
@@ -1319,6 +1385,9 @@ async function handleOrderFormSubmit(event) {
         return;
     }
     
+    // Obtener el token JWT de localStorage
+    
+
     showLoading();
     try {
         // Create or update order
@@ -1336,8 +1405,9 @@ async function handleOrderFormSubmit(event) {
             orderData.idOrder = parseInt(orderId);
             orderResponse = await fetch(`${API_BASE_URL}/orders/${orderId}`, {
                 method: 'PUT',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(orderData)
             });
@@ -1362,8 +1432,9 @@ async function handleOrderFormSubmit(event) {
             // Create new order
             orderResponse = await fetch(`${API_BASE_URL}/orders`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(orderData)
             });
@@ -1388,8 +1459,9 @@ async function handleOrderFormSubmit(event) {
             
             const itemResponse = await fetch(`${API_BASE_URL}/order-details`, {
                 method: 'POST',
+                credentials: 'include',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json'  // ¡Este header es crucial!
                 },
                 body: JSON.stringify(orderItemData)
             });
@@ -1743,6 +1815,7 @@ function closeConfirmModal() {
 async function confirmDelete() {
     if (!currentDeleteId || !currentDeleteType) return;
     
+
     showLoading();
     try {
         let url;
@@ -1762,19 +1835,23 @@ async function confirmDelete() {
             default:
                 throw new Error('Invalid delete type');
         }
-        
+
         const response = await fetch(url, {
-            method: 'DELETE'
+            method: 'DELETE',
+credentials: 'include',
+headers: {
+    'Content-Type': 'application/json'
+},
         });
-        
+
         if (!response.ok) {
             throw new Error(`Failed to delete ${currentDeleteType}`);
         }
-        
+
         const result = await response.text();
         showSuccess(result);
         closeConfirmModal();
-        
+
         // Refresh the appropriate section
         switch (currentDeleteType) {
             case 'employee':
@@ -1790,7 +1867,7 @@ async function confirmDelete() {
                 fetchOrders();
                 break;
         }
-        
+
         fetchDashboardData(); // Update dashboard counts
     } catch (error) {
         showError(error.message);
@@ -1798,6 +1875,7 @@ async function confirmDelete() {
         hideLoading();
     }
 }
+
 
 // Utility Functions
 function showLoading() {
