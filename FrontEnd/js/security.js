@@ -3,7 +3,7 @@
     'use strict';
     
     // Constantes de configuración
-    const API_BASE_URL = 'http://172.30.3.44:8080/api';
+    const API_BASE_URL = 'http://localhost:8080/api';
     const RECAPTCHA_SITE_KEY = '6Lcy8x4rAAAAAKSfqVFXEkhNz_IsFIb_iCn5qOwy'; // Tu clave de sitio real
     
     // Variables globales
@@ -378,7 +378,7 @@
             let redirectUrl = '../menu/menu.html'; // URL predeterminada para clientes
             
             if (roles.includes('ROLE_ADMIN') || roles.includes('ROLE_STAFF')) {
-                redirectUrl = '../sistema de gestion/welcome.html'; // URL para staff/admin
+                redirectUrl = '../sistema de gestion/dashboard.html'; // URL para staff/admin
             }
             
             Swal.fire({
@@ -640,7 +640,7 @@
             const userRoles = JSON.parse(sessionStorage.getItem('userRoles') || '[]');
             
             if (userRoles.includes('ROLE_ADMIN') || userRoles.includes('ROLE_STAFF')) {
-                window.location.href = '../sistema de gestion/welcome.html';
+                window.location.href = '../sistema de gestion/dashboard.html';
             } else if (userRoles.includes('ROLE_CLIENT')) {
                 window.location.href = '../menu/menu.html';
             }

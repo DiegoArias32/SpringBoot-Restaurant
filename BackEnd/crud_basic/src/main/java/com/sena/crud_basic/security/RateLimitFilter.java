@@ -28,22 +28,34 @@ public class RateLimitFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         
-        // Obtener la dirección IP del cliente
+        // Get request method
+        String method = request.getMethod();
+        
+        // Only apply rate limiting to mutation operations (POST, PUT, DELETE)
+        // GET requests are allowed without rate limiting
+        if ("GET".equals(method)) {
+            // If it's a GET request, continue without rate limiting
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
+        // For POST, PUT, DELETE operations, apply rate limiting
+        // Get client IP
         String ipAddress = getClientIP(request);
         
-        // Intenta consumir un token del bucket para esta IP
+        // Try to consume a token from the bucket for this IP
         if (rateLimitService.tryConsume(ipAddress)) {
-            // Si hay tokens disponibles, continuar
+            // If tokens are available, continue
             filterChain.doFilter(request, response);
         } else {
-            // Si no hay tokens, responder con 429 Too Many Requests
+            // If no tokens are available, respond with 429 Too Many Requests
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             
             Map<String, Object> responseBody = new HashMap<>();
             responseBody.put("status", HttpStatus.TOO_MANY_REQUESTS.value());
             responseBody.put("error", "Too Many Requests");
-            responseBody.put("message", "Has excedido el límite de peticiones. Por favor, intenta más tarde.");
+            responseBody.put("message", "Has excedido el límite de peticiones para operaciones de modificación. Por favor, intenta más tarde.");
             
             ObjectMapper mapper = new ObjectMapper();
             mapper.writeValue(response.getWriter(), responseBody);
@@ -53,7 +65,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
     private String getClientIP(HttpServletRequest request) {
         String xForwardedForHeader = request.getHeader("X-Forwarded-For");
         if (xForwardedForHeader != null && !xForwardedForHeader.isEmpty()) {
-            // Si hay X-Forwarded-For, usar la primera IP (cliente original)
+            // If there's X-Forwarded-For, use the first IP (original client)
             return xForwardedForHeader.split(",")[0].trim();
         }
         return request.getRemoteAddr();

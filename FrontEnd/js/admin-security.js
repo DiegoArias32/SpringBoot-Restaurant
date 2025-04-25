@@ -170,12 +170,16 @@
             }
             
             // Mostrar spinner de carga
-            showLoading();
+            if (typeof showLoading === 'function') {
+                showLoading();
+            }
             
             const response = await fetch(`${API_BASE_URL}${url}`, fetchOptions);
             
             // Ocultar spinner de carga
-            hideLoading();
+            if (typeof hideLoading === 'function') {
+                hideLoading();
+            }
             
             // Si la respuesta no es exitosa, lanzamos un error
             if (!response.ok) {
@@ -197,258 +201,43 @@
             return await response.json();
         } catch (error) {
             // Ocultar spinner en caso de error
-            hideLoading();
+            if (typeof hideLoading === 'function') {
+                hideLoading();
+            }
             
             console.error('Error en la petición API:', error);
-            showError(error.message || 'Error en la comunicación con el servidor');
+            if (typeof showError === 'function') {
+                showError(error.message || 'Error en la comunicación con el servidor');
+            }
             throw error;
         }
     }
     
-    // Reemplazar las funciones fetch originales por las versiones seguras
-    window.secureFetchDashboardData = async function() {
-        try {
-            // Fetch counts for each entity
-            const [clientsResponse, dishesResponse, employeesResponse, ordersResponse] = await Promise.all([
-                apiRequest('/clients', 'GET'),
-                apiRequest('/menu', 'GET'),
-                apiRequest('/employees', 'GET'),
-                apiRequest('/orders', 'GET')
-            ]);
-            
-            // Update dashboard counts
-            clientCount.textContent = Array.isArray(clientsResponse) ? clientsResponse.length : 0;
-            dishCount.textContent = Array.isArray(dishesResponse) ? dishesResponse.length : 0;
-            employeeCount.textContent = Array.isArray(employeesResponse) ? employeesResponse.length : 0;
-            orderCount.textContent = Array.isArray(ordersResponse) ? ordersResponse.length : 0;
-            
-            // Make sure orders is an array before using slice
-            if (!Array.isArray(ordersResponse)) {
-                console.error('Orders data is not an array:', ordersResponse);
-                recentOrdersTableBody.innerHTML = '';
-                recentOrdersTableBody.appendChild(createNoDataRow('No orders found or invalid data format', 6));
-                return;
-            }
-            
-            // Display recent orders (limit to 5)
-            const recentOrders = ordersResponse.slice(0, 5);
-            
-            // Get customer names for each order
-            const customerIds = recentOrders.map(order => order.idCustomer);
-            const clientsById = {};
-            
-            if (Array.isArray(clientsResponse)) {
-                clientsResponse.forEach(client => {
-                    clientsById[client.idClient] = `${client.firstName} ${client.lastName}`;
-                });
-            }
-            
-            // Populate recent orders table
-            recentOrdersTableBody.innerHTML = '';
-            
-            if (recentOrders.length === 0) {
-                recentOrdersTableBody.appendChild(createNoDataRow('No orders found', 6));
-                return;
-            }
-            
-            recentOrders.forEach(order => {
-                const row = createRecentOrderRow(order, clientsById);
-                recentOrdersTableBody.appendChild(row);
-            });
-            
-        } catch (error) {
-            console.error('Dashboard data error:', error);
-            showError('Failed to load dashboard data: ' + error.message);
+    // Expose API request function globally
+    window.secureApiRequest = apiRequest;
+    
+    // Helper functions
+    window.secureShowLoading = function() {
+        if (typeof showLoading === 'function') {
+            showLoading();
         }
     };
     
-    window.secureFetchEmployees = async function() {
-        try {
-            const employees = await apiRequest('/employees', 'GET');
-            displayEmployees(employees);
-        } catch (error) {
-            showError(error.message);
+    window.secureHideLoading = function() {
+        if (typeof hideLoading === 'function') {
+            hideLoading();
         }
     };
     
-    window.secureFetchDishes = async function() {
-        try {
-            const dishes = await apiRequest('/menu', 'GET');
-            displayDishes(dishes);
-        } catch (error) {
-            showError(error.message);
+    window.secureShowSuccess = function(message) {
+        if (typeof showSuccess === 'function') {
+            showSuccess(message);
         }
     };
     
-    window.secureFetchClients = async function() {
-        try {
-            const clients = await apiRequest('/clients', 'GET');
-            displayClients(clients);
-        } catch (error) {
-            showError(error.message);
-        }
-    };
-    
-    window.secureFetchOrders = async function() {
-        try {
-            const orders = await apiRequest('/orders', 'GET');
-            
-            // Fetch clients to get names
-            const clients = await apiRequest('/clients', 'GET');
-            
-            // Create a map of client IDs to names
-            const clientMap = {};
-            clients.forEach(client => {
-                clientMap[client.idClient] = `${client.firstName} ${client.lastName}`;
-            });
-            
-            displayOrders(orders, clientMap);
-            
-            // Also populate the customer dropdown for new orders
-            populateCustomerDropdown(clients);
-        } catch (error) {
-            showError(error.message);
-        }
-    };
-    
-    window.secureUpdateEmployee = async function(id, employeeData) {
-        try {
-            const result = await apiRequest(`/employees/${id}`, 'PUT', employeeData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureDeleteEmployee = async function(id) {
-        try {
-            const result = await apiRequest(`/employees/${id}`, 'DELETE');
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureCreateEmployee = async function(employeeData) {
-        try {
-            const result = await apiRequest('/employees', 'POST', employeeData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    // Implementar el resto de las funciones de la misma manera
-    window.secureCreateDish = async function(dishData) {
-        try {
-            const result = await apiRequest('/menu', 'POST', dishData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureUpdateDish = async function(id, dishData) {
-        try {
-            const result = await apiRequest(`/menu/${id}`, 'PUT', dishData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureDeleteDish = async function(id) {
-        try {
-            const result = await apiRequest(`/menu/${id}`, 'DELETE');
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureCreateClient = async function(clientData) {
-        try {
-            const result = await apiRequest('/clients', 'POST', clientData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureUpdateClient = async function(id, clientData) {
-        try {
-            const result = await apiRequest(`/clients/${id}`, 'PUT', clientData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureDeleteClient = async function(id) {
-        try {
-            const result = await apiRequest(`/clients/${id}`, 'DELETE');
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureCreateOrder = async function(orderData) {
-        try {
-            const result = await apiRequest('/orders', 'POST', orderData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureUpdateOrder = async function(id, orderData) {
-        try {
-            const result = await apiRequest(`/orders/${id}`, 'PUT', orderData);
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureDeleteOrder = async function(id) {
-        try {
-            const result = await apiRequest(`/orders/${id}`, 'DELETE');
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureUpdateOrderStatus = async function(id, status) {
-        try {
-            const result = await apiRequest(`/orders/${id}/status?status=${status}`, 'PUT');
-            return result;
-        } catch (error) {
-            showError(error.message);
-            throw error;
-        }
-    };
-    
-    window.secureGetOrderDetails = async function(id) {
-        try {
-            const orderDetails = await apiRequest(`/order-details/order/${id}`, 'GET');
-            return orderDetails;
-        } catch (error) {
-            showError(error.message);
-            throw error;
+    window.secureShowError = function(message) {
+        if (typeof showError === 'function') {
+            showError(message);
         }
     };
     
@@ -464,48 +253,6 @@
             window.location.href = '../login y register/loginAndRegister.html';
         }
     };
-    
-    // ========================
-    // Funciones de ayuda
-    // ========================
-    
-    function showLoading() {
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        if (loadingSpinner) {
-            loadingSpinner.classList.add('active');
-        }
-    }
-    
-    function hideLoading() {
-        const loadingSpinner = document.getElementById('loadingSpinner');
-        if (loadingSpinner) {
-            loadingSpinner.classList.remove('active');
-        }
-    }
-    
-    function showSuccess(message) {
-        const successAlert = document.getElementById('successAlert');
-        if (successAlert) {
-            successAlert.textContent = message;
-            successAlert.classList.add('active');
-            
-            setTimeout(() => {
-                successAlert.classList.remove('active');
-            }, 3000);
-        }
-    }
-    
-    function showError(message) {
-        const errorAlert = document.getElementById('errorAlert');
-        if (errorAlert) {
-            errorAlert.textContent = message;
-            errorAlert.classList.add('active');
-            
-            setTimeout(() => {
-                errorAlert.classList.remove('active');
-            }, 3000);
-        }
-    }
     
     // ========================
     // Inicialización
@@ -540,22 +287,14 @@
                 }
             });
         });
-        
-        // Cargar datos iniciales
-        fetchDashboardData();
-        
-        // Reemplazar métodos fetch estándar con versiones seguras
-        window.fetchDashboardData = window.secureFetchDashboardData;
-        window.fetchEmployees = window.secureFetchEmployees;
-        window.fetchDishes = window.secureFetchDishes;
-        window.fetchClients = window.secureFetchClients;
-        window.fetchOrders = window.secureFetchOrders;
     });
     
     // Añadir gestión de errores global
     window.addEventListener('error', function(event) {
         console.error('Error global:', event.message);
-        showError('Se ha producido un error en la aplicación. Por favor, recargue la página o contacte al administrador.');
+        if (typeof showError === 'function') {
+            showError('Se ha producido un error en la aplicación. Por favor, recargue la página o contacte al administrador.');
+        }
     });
     
     // Prevenir ataques de clickjacking
