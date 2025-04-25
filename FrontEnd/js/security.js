@@ -3,7 +3,7 @@
     'use strict';
     
     // Constantes de configuración
-    const API_BASE_URL = 'http://localhost:8080/api';
+    const API_BASE_URL = 'http://172.30.7.71:8080/api';
     const RECAPTCHA_SITE_KEY = '6Lcy8x4rAAAAAKSfqVFXEkhNz_IsFIb_iCn5qOwy'; // Tu clave de sitio real
     
     // Variables globales

@@ -3,7 +3,7 @@
     'use strict';
     
     // Constantes de configuración
-    const API_BASE_URL = 'http://172.30.3.44:8080/api';
+    const API_BASE_URL = 'http://172.30.7.71:8080/api';
     
     // Variables globales
     let csrfToken = '';

@@ -81,7 +81,7 @@ public class WebSecurityConfig {
                     "font-src 'self' https://cdnjs.cloudflare.com data: https://fonts.gstatic.com; " +
                     "img-src 'self' data:; " +
                     "frame-src https://www.google.com/ https://www.google.com/recaptcha/ https://www.gstatic.com/; " +
-                    "connect-src 'self' http://localhost:8080 http://localhost:5501/ http://127.0.0.1:8080 http://172.30.3.44:8080 http://192.168.0.*:8080 http://192.168.*.*:8080 http://10.*.*.*:8080 https://www.google.com https://www.gstatic.com/; "
+                    "connect-src 'self' http://localhost:8080 http://localhost:5501/ http://127.0.0.1:8080 http://172.30.7.71:8080 http://172.30.7.71:5501 http://192.168.0.*:8080 http://192.168.*.*:8080 http://10.*.*.*:8080 https://www.google.com https://www.gstatic.com/; "
                 ))
             )
             .authorizeHttpRequests(auth -> auth
@@ -108,7 +108,7 @@ public class WebSecurityConfig {
         // Permitir conexiones desde cualquier origen en la red local
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:*", 
-            "http://172.30.3.44:5501",
+            "http://172.30.7.71:5501",
             "http://127.0.0.1:*", 
             "http://192.168.*.*:*",  // Permitir acceso desde la red local
             "http://10.*.*.*:*"      // Otra subred común en redes locales
